@@ -2,7 +2,7 @@
 import os
 import sys
 import gi
-from gi.repository import Cairo
+import cairo
 
 # Lock library versions
 gi.require_version('Gtk', '3.0')
@@ -20,8 +20,9 @@ def on_permission_decision(web_view, decision):
 
 def make_click_through(window):
     # Use Cairo empty region to make window click-through
-    region = Cairo.Region()
+    region = cairo.Region()
     window.input_shape_combine_region(region)
+
 
 def main():
     import argparse
