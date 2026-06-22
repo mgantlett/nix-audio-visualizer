@@ -1,0 +1,1 @@
+../../../.ado-core/.agent/templates/hooks/reference-transaction.sh

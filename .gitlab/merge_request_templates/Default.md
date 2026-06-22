@@ -1,0 +1,1 @@
+../../.ado-core/.agent/templates/PULL_REQUEST_TEMPLATE.md

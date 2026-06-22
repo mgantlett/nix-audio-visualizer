@@ -1,0 +1,1 @@
+../../.ado-core/.agent/templates/COMMIT_TEMPLATE.md

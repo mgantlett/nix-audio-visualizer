@@ -1,0 +1,1 @@
+../../.ado-core/.agent/rules/AGENT.md

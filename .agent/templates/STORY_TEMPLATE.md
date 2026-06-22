@@ -1,0 +1,1 @@
+../../.ado-core/.agent/templates/STORY_TEMPLATE.md

@@ -1,0 +1,1 @@
+../../../.ado-core/.agent/templates/hooks/pre-commit.sh

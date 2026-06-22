@@ -1,0 +1,1 @@
+../../.ado-core/.agent/workflows/doc.md

@@ -1,0 +1,1 @@
+.agent/rules/redirector.md

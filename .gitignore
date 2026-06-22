@@ -1,0 +1,12 @@
+# Agent OS System Config
+.agent-plugins/config.env
+.agent-plugins/*.env
+.agent/tmp/
+.agent/state/
+.agent/locks/
+.agent/logs/
+.agent/.*
+.agent/*.db
+.gitbrain*.db
+*.pid
+
