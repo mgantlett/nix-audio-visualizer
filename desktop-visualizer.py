@@ -14,9 +14,10 @@ from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2
 
 def on_permission_decision(web_view, decision):
     # Auto-grant audio permission for visualizer input capture
-    if decision.get_permission_type() == WebKit2.PermissionType.AUDIO_CAPTURE:
-        decision.grant()
-        return True
+    if isinstance(decision, WebKit2.UserMediaPermissionRequest):
+        if decision.props.is_for_audio_device:
+            decision.allow()
+            return True
     return False
 
 def make_click_through(window):
