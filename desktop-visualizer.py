@@ -30,7 +30,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Wayland desktop background audio visualizer.")
     parser.add_argument("--style", choices=["bars", "eq", "wave", "pulse"], default="bars", help="Visualization style")
-    parser.add_argument("--height", type=int, default=180, help="Visualizer height in pixels")
+    parser.add_argument("--height", type=int, default=90, help="Visualizer height in pixels")
     args = parser.parse_args()
 
     window = Gtk.Window()
