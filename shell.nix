@@ -11,13 +11,23 @@ pkgs.mkShell {
     wireplumber
     pavucontrol
     glibcLocales
+    sqlite
+    jq
+    git
+    curl
+    nodejs
+    bc
+    parallel
+    shellcheck
   ];
+
 
   LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
   shellHook = ''
-    echo "⚡ Nix Audio Visualizer Desktop Shell Loaded! ⚡"
+    echo "⚡ Nix Audio Visualizer Desktop Shell (with ADO-Core support) Loaded! ⚡"
     echo "Run: python3 desktop-visualizer.py"
   '';
+
 
 }
