@@ -64,7 +64,7 @@ def main():
     # Enable WebAudio and MediaStream in WebKitGTK settings
     settings = webview.get_settings()
     settings.set_enable_write_console_messages_to_stdout(True)
-    settings.set_enable_mediastream(True)
+    settings.set_enable_media_stream(True)
     
     # Transparent web view background
     bg_color = WebKit2.Color()
