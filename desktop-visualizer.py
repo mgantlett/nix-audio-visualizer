@@ -7,9 +7,10 @@ import cairo
 # Lock library versions
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkLayerShell', '0.1')
+gi.require_version('Gdk', '3.0')
 gi.require_version('WebKit2', '4.1')
 
-from gi.repository import Gtk, GtkLayerShell, WebKit2
+from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2
 
 def on_permission_decision(web_view, decision):
     # Auto-grant audio permission for visualizer input capture
@@ -67,7 +68,7 @@ def main():
     settings.set_enable_media_stream(True)
     
     # Transparent web view background
-    bg_color = WebKit2.Color()
+    bg_color = Gdk.RGBA()
     bg_color.red, bg_color.green, bg_color.blue, bg_color.alpha = 0.0, 0.0, 0.0, 0.0
     webview.set_background_color(bg_color)
 
