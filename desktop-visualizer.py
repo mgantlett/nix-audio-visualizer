@@ -57,7 +57,7 @@ def main():
     GtkLayerShell.set_keyboard_mode(window, GtkLayerShell.KeyboardMode.NONE)
 
     # Force a specific request size height
-    window.set_size_request(-1, args.height)
+    window.set_size_request(0, args.height)
 
     # Instantiate WebView
     webview = WebKit2.WebView()

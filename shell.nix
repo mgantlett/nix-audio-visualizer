@@ -11,6 +11,9 @@ pkgs.mkShell {
     wireplumber
     pavucontrol
     glibcLocales
+    gst_all_1.gstreamer
+    gst_all_1.gst-plugins-base
+    gst_all_1.gst-plugins-good
     sqlite
     jq
     git
