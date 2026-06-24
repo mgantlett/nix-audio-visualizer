@@ -66,7 +66,6 @@ canvas {
     right: 10px;
     width: 220px;
     height: auto;
-    max-height: 240px;
     background: rgba(15, 15, 20, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -85,6 +84,18 @@ canvas {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+.menu-scroll {
+    margin-bottom: 8px;
+}
+
+.style-setting {
+    display: none;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
 
 .menu-group {
     margin-bottom: 8px;

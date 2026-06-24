@@ -15,6 +15,19 @@ def test_arg_parsing():
     assert "--device" in result.stdout, "Missing --device option"
     print("Argument verification successful.")
 
+# Verify that the default parameters in desktop-visualizer.py are correct
+def test_default_params():
+    print("Verifying default arguments...")
+    result = subprocess.run(
+        [sys.executable, "desktop-visualizer.py", "--help"],
+        capture_output=True,
+        text=True
+    )
+    assert "--style" in result.stdout
+    assert "bars" in result.stdout
+    print("Default verification successful.")
+
 if __name__ == "__main__":
     test_arg_parsing()
+    test_default_params()
     print("All tests completed successfully!")

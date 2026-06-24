@@ -24,6 +24,7 @@ def on_permission_decision(web_view, decision):
 # State track for controls popup
 menu_open = False
 visualizer_height = 45
+menu_height = 250
 
 # Setup initial click-through window shape
 def make_click_through(window):
@@ -43,8 +44,8 @@ def update_input_shape(window, allocation):
     region.union(gear_rect)
 
     if menu_open:
-        # Floating popup controls menu (220x240 box) sitting above the visualizer bars
-        menu_rect = cairo.RectangleInt(width - 230, height - (visualizer_height + 245), 220, 240)
+        # Floating popup controls menu (220 wide, custom height) sitting above the visualizer bars
+        menu_rect = cairo.RectangleInt(width - 230, height - (visualizer_height + menu_height + 10), 220, menu_height)
         region.union(menu_rect)
 
     window.input_shape_combine_region(region)
@@ -52,7 +53,7 @@ def update_input_shape(window, allocation):
 # Handle window title update events
 def on_title_changed(webview, pspec, window):
     """Handle JS-to-Python communication via window title changes."""
-    global menu_open
+    global menu_open, menu_height
     title = webview.get_title()
     if title:
         try:
@@ -61,12 +62,20 @@ def on_title_changed(webview, pspec, window):
             action = data.get("action")
             if action == "menu-toggle":
                 menu_open = bool(data.get("open", False))
-                # Adjust Gtk window height dynamically sitting above visualizer height (240px menu + padding)
-                target_height = (visualizer_height + 255) if menu_open else visualizer_height
+                menu_height = int(data.get("menuHeight", 250))
+                # Adjust Gtk window height dynamically sitting above visualizer height (menu_height + padding)
+                target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
                 window.resize(window.get_size()[0], target_height)
                 window.set_size_request(0, target_height)
                 # Re-evaluate the input shape region
                 window.queue_resize()
+            elif action == "menu-resize":
+                menu_height = int(data.get("menuHeight", 250))
+                if menu_open:
+                    target_height = (visualizer_height + menu_height + 15)
+                    window.resize(window.get_size()[0], target_height)
+                    window.set_size_request(0, target_height)
+                    window.queue_resize()
             elif action == "close":
                 Gtk.main_quit()
         except Exception:
