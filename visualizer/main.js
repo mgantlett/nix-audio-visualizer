@@ -383,7 +383,61 @@ function render() {
 function initAudio() {
     if (audioCtx) return; // Prevent double init
 
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    // Try to list devices first to see if permissions are already granted and labels are visible
+    navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+            const audioDevices = devices.filter(d => d.kind === 'audioinput');
+            const hasLabels = audioDevices.some(d => d.label && d.label.length > 0);
+
+            if (hasLabels) {
+                console.log("Audio device labels available directly. Checking for target device...");
+                const targetDevice = audioDevices.find(d => 
+                    d.label.toLowerCase().includes('hdmi') || 
+                    d.label.toLowerCase().includes('ad103') || 
+                    d.label.toLowerCase().includes('7.1')
+                ) || (audioDevices.length >= 3 ? audioDevices[2] : null);
+
+                const constraints = targetDevice 
+                    ? { audio: { deviceId: { exact: targetDevice.deviceId } }, video: false }
+                    : { audio: true, video: false };
+
+                if (targetDevice) {
+                    console.log("Selecting HDMI 7.1 target device directly:", targetDevice.label);
+                }
+                return navigator.mediaDevices.getUserMedia(constraints);
+            } else {
+                // Request initial stream to grant/trigger permission, then select device
+                console.log("Audio device labels empty. Requesting permission stream first...");
+                return navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                    .then(initialStream => {
+                        return navigator.mediaDevices.enumerateDevices()
+                            .then(newDevices => {
+                                const newAudioDevices = newDevices.filter(d => d.kind === 'audioinput');
+                                const targetDevice = newAudioDevices.find(d => 
+                                    d.label.toLowerCase().includes('hdmi') || 
+                                    d.label.toLowerCase().includes('ad103') || 
+                                    d.label.toLowerCase().includes('7.1')
+                                ) || (newAudioDevices.length >= 3 ? newAudioDevices[2] : null);
+
+                                if (targetDevice) {
+                                    const activeTrack = initialStream.getAudioTracks()[0];
+                                    const activeSettings = activeTrack ? activeTrack.getSettings() : {};
+                                    
+                                    if (activeSettings.deviceId !== targetDevice.deviceId) {
+                                        console.log("Switching input to target device:", targetDevice.label);
+                                        if (activeTrack) activeTrack.stop();
+                                        
+                                        return navigator.mediaDevices.getUserMedia({
+                                            audio: { deviceId: { exact: targetDevice.deviceId } },
+                                            video: false
+                                        });
+                                    }
+                                }
+                                return initialStream;
+                            });
+                    });
+            }
+        })
         .then(stream => {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioCtx.createMediaStreamSource(stream);

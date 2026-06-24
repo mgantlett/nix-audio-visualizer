@@ -29,7 +29,7 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "⚡ Nix Audio Visualizer Desktop Shell (with ADO-Core support) Loaded! ⚡"
-    echo "Run: python3 desktop-visualizer.py"
+    echo "Run: __NV_DISABLE_EXPLICIT_SYNC=1 python3 desktop-visualizer.py"
   '';
 
 

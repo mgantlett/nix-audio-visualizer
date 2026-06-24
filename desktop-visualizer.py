@@ -30,7 +30,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Wayland desktop background audio visualizer.")
     parser.add_argument("--style", choices=["bars", "eq", "wave", "pulse"], default="bars", help="Visualization style")
-    parser.add_argument("--height", type=int, default=90, help="Visualizer height in pixels")
+    parser.add_argument("--height", type=int, default=45, help="Visualizer height in pixels")
     args = parser.parse_args()
 
     window = Gtk.Window()
@@ -70,7 +70,7 @@ def main():
     
     # Transparent web view background
     bg_color = Gdk.RGBA()
-    bg_color.red, bg_color.green, bg_color.blue, bg_color.alpha = 0.0, 0.0, 0.0, 0.0
+    bg_color.red, bg_color.green, bg_color.blue, bg_color.alpha = 0.0, 0.0, 0.0, 1.0
     webview.set_background_color(bg_color)
 
     # Connect signals

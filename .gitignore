@@ -10,3 +10,7 @@
 .gitbrain*.db
 *.pid
 
+# IDE & Runtime caches
+.vscode/
+__pycache__/
+*.pyc

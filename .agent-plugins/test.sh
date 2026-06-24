@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-# ⚠️ WARNING: DO NOT EDIT. MANAGED BY AGENT-DEVOPS-OS ⚠️
-# To override, create a custom script and remove this wrapper.
-source .ado-core/plugins-available/test/npm.sh
+run_test() {
+    echo "Running Python test suite..."
+    python3 test_visualizer.py
+}
