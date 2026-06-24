@@ -23,6 +23,7 @@ let audioCtx = null;
 let analyser = null;
 let dataArray = null;
 let waveArray = null;
+let sensitivityMultiplier = 1.0;
 
 // Reactive state variables
 let smoothBass = 0;
@@ -41,10 +42,11 @@ const SMOOTH = 0.7;
 const BEAT_THRESHOLD = 0.45;
 const BEAT_COOLDOWN_MS = 150;
 
-// Auto-Gain Control (AGC) state
+// Auto-Gain Control (AGC) state for bars/eq
 let peakLevel = 0.5;
 const PEAK_DECAY = 0.99;
 
+// Update peak level for Auto-Gain Control (AGC) with standard decay
 function updatePeak(frameMax) {
     if (frameMax > peakLevel) {
         peakLevel = frameMax;
@@ -54,10 +56,26 @@ function updatePeak(frameMax) {
     peakLevel = Math.max(peakLevel, 0.1); // Floor to avoid division by zero
 }
 
+// Auto-Gain Control (AGC) state for oscilloscope
+let wavePeakLevel = 0.1;
+const WAVE_PEAK_DECAY = 0.95;
+
+// Update peak level for oscilloscope with a faster decay rate
+function updateWavePeak(frameMax) {
+    if (frameMax > wavePeakLevel) {
+        wavePeakLevel = frameMax;
+    } else {
+        wavePeakLevel *= WAVE_PEAK_DECAY;
+    }
+    wavePeakLevel = Math.max(wavePeakLevel, 0.02); // Floor to avoid division by zero
+}
+
 // Fit canvas to window size
+// Fit canvas to window size using fixed height param to avoid vertical squashing
 function resizeCanvas() {
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const heightParam = parseInt(urlParams.get('height') || '45');
+    canvas.height = heightParam;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -81,7 +99,7 @@ function drawBars(width, height) {
 
     for (let i = 0; i < bars; i++) {
         const rawValue = (dataArray[i] ?? 0) / 255;
-        const value = Math.min(1.0, rawValue / (peakLevel * 1.0));
+        const value = Math.min(1.0, (rawValue / (peakLevel * 1.0)) * sensitivityMultiplier);
         
         const barHeight = value * (height * 0.9);
         const x = i * barWidth;
@@ -124,7 +142,7 @@ function drawEqualizer(width, height) {
     for (let i = 0; i < bars; i++) {
         const idx = Math.floor((i / bars) * Math.min(dataArray.length, 64));
         const rawValue = (dataArray[idx] ?? 0) / 255;
-        const value = Math.min(1.0, rawValue / (peakLevel * 1.0));
+        const value = Math.min(1.0, (rawValue / (peakLevel * 1.0)) * sensitivityMultiplier);
         const litSegments = Math.floor(value * totalSegments);
 
         const x = i * barWidth + gap / 2;
@@ -173,6 +191,14 @@ function drawEqualizer(width, height) {
 function drawOscilloscope(width, height) {
     const mid = height / 2;
 
+    // AGC Peak Search for Waveform
+    let waveMax = 0;
+    for (let i = 0; i < waveArray.length; i++) {
+        const val = Math.abs(waveArray[i] - 128) / 128;
+        if (val > waveMax) waveMax = val;
+    }
+    updateWavePeak(waveMax);
+
     // Glowing background line
     ctx.strokeStyle = `hsla(${hue}, 80%, 60%, 0.15)`;
     ctx.lineWidth = 6;
@@ -206,21 +232,32 @@ function drawOscilloscope(width, height) {
     }
 }
 
+// Draw the actual curved wave path based on audio buffer samples
 function drawWavePath(width, mid, height) {
-    const step = width / waveArray.length;
-    ctx.moveTo(0, mid);
-    for (let i = 0; i < waveArray.length; i++) {
-        const sample = (waveArray[i] - 128) / 128;
-        const y = mid + sample * (height * 0.45);
+    // Search for zero-crossing to stabilize wave horizontally
+    let triggerIndex = 0;
+    for (let i = 0; i < waveArray.length / 2; i++) {
+        if (waveArray[i] < 128 && waveArray[i+1] >= 128) {
+            triggerIndex = i;
+            break;
+        }
+    }
+
+    const remainingLength = waveArray.length - triggerIndex;
+    const step = width / remainingLength;
+
+    // Scale amplitude by wavePeakLevel AGC and user sensitivity multiplier
+    const gain = (1.0 / Math.max(wavePeakLevel, 0.02)) * sensitivityMultiplier;
+
+    ctx.beginPath();
+    for (let i = 0; i < remainingLength; i++) {
+        const sample = ((waveArray[triggerIndex + i] - 128) / 128) * gain;
+        const y = mid + Math.max(-1.0, Math.min(1.0, sample)) * (height * 0.45);
+        const x = i * step;
         if (i === 0) {
-            ctx.moveTo(0, y);
+            ctx.moveTo(x, y);
         } else {
-            const prevX = (i - 1) * step;
-            const x = i * step;
-            const cpX = prevX + (x - prevX) / 2;
-            const prevSample = (waveArray[i - 1] - 128) / 128;
-            const prevY = mid + prevSample * (height * 0.45);
-            ctx.quadraticCurveTo(cpX, prevY, x, y);
+            ctx.lineTo(x, y);
         }
     }
 }
@@ -229,6 +266,7 @@ function drawWavePath(width, mid, height) {
 const rings = [];
 let lastRingTime = 0;
 
+// Draw the circular neural pulsing rings and satellites
 function drawNeuralPulse(width, height) {
     const cx = width / 2;
     const cy = height / 2;
@@ -280,7 +318,7 @@ function drawNeuralPulse(width, height) {
     const numDots = 8;
     for (let i = 0; i < numDots; i++) {
         const idx = Math.floor((i / numDots) * dataArray.length);
-        const value = (dataArray[idx] ?? 0) / 255;
+        const value = ((dataArray[idx] ?? 0) / 255) * sensitivityMultiplier;
         const angle = (i / numDots) * Math.PI * 2 + now * 0.001;
         const orbitR = 10 + value * (maxR * 0.4);
         const dx = cx + Math.cos(angle) * orbitR;
@@ -390,36 +428,70 @@ function initAudio() {
             const hasLabels = audioDevices.some(d => d.label && d.label.length > 0);
 
             if (hasLabels) {
-                console.log("Audio device labels available directly. Checking for target device...");
+                console.log("Audio device labels available directly. Discovered devices:", audioDevices.map(d => `${d.label} (${d.deviceId})`));
                 const targetDevice = audioDevices.find(d => 
-                    d.label.toLowerCase().includes('hdmi') || 
-                    d.label.toLowerCase().includes('ad103') || 
-                    d.label.toLowerCase().includes('7.1')
+                    d.label && (
+                        d.label.toLowerCase().includes('hdmi') || 
+                        d.label.toLowerCase().includes('ad103') || 
+                        d.label.toLowerCase().includes('7.1')
+                    )
                 ) || (audioDevices.length >= 3 ? audioDevices[2] : null);
 
                 const constraints = targetDevice 
-                    ? { audio: { deviceId: { exact: targetDevice.deviceId } }, video: false }
-                    : { audio: true, video: false };
+                    ? { 
+                        audio: { 
+                            deviceId: { exact: targetDevice.deviceId },
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                            channelCount: { ideal: 8 }
+                        }, 
+                        video: false 
+                      }
+                    : { 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                            channelCount: { ideal: 8 }
+                        }, 
+                        video: false 
+                      };
 
                 if (targetDevice) {
-                    console.log("Selecting HDMI 7.1 target device directly:", targetDevice.label);
+                    console.log("Selecting HDMI 7.1 target device directly:", targetDevice.label, "ID:", targetDevice.deviceId);
+                } else {
+                    console.log("No target device matched directly. Using default stream constraints.");
                 }
                 return navigator.mediaDevices.getUserMedia(constraints);
             } else {
                 // Request initial stream to grant/trigger permission, then select device
                 console.log("Audio device labels empty. Requesting permission stream first...");
-                return navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                return navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        channelCount: { ideal: 8 }
+                    }, 
+                    video: false 
+                })
                     .then(initialStream => {
                         return navigator.mediaDevices.enumerateDevices()
                             .then(newDevices => {
+                                console.log("Discovered devices post-permission:", newDevices.map(d => `${d.kind}: ${d.label} (${d.deviceId})`));
                                 const newAudioDevices = newDevices.filter(d => d.kind === 'audioinput');
+                                console.log("Audio input devices found:", newAudioDevices.map(d => `${d.label} (${d.deviceId})`));
                                 const targetDevice = newAudioDevices.find(d => 
-                                    d.label.toLowerCase().includes('hdmi') || 
-                                    d.label.toLowerCase().includes('ad103') || 
-                                    d.label.toLowerCase().includes('7.1')
+                                    d.label && (
+                                        d.label.toLowerCase().includes('hdmi') || 
+                                        d.label.toLowerCase().includes('ad103') || 
+                                        d.label.toLowerCase().includes('7.1')
+                                    )
                                 ) || (newAudioDevices.length >= 3 ? newAudioDevices[2] : null);
 
                                 if (targetDevice) {
+                                    console.log("Found target device:", targetDevice.label, "ID:", targetDevice.deviceId);
                                     const activeTrack = initialStream.getAudioTracks()[0];
                                     const activeSettings = activeTrack ? activeTrack.getSettings() : {};
                                     
@@ -428,10 +500,18 @@ function initAudio() {
                                         if (activeTrack) activeTrack.stop();
                                         
                                         return navigator.mediaDevices.getUserMedia({
-                                            audio: { deviceId: { exact: targetDevice.deviceId } },
+                                            audio: { 
+                                                deviceId: { exact: targetDevice.deviceId },
+                                                echoCancellation: false,
+                                                noiseSuppression: false,
+                                                autoGainControl: false,
+                                                channelCount: { ideal: 8 }
+                                            },
                                             video: false
                                         });
                                     }
+                                } else {
+                                    console.log("No target device matched (no HDMI/AD103/7.1 or < 3 devices). Using default stream.");
                                 }
                                 return initialStream;
                             });
@@ -443,8 +523,15 @@ function initAudio() {
             const source = audioCtx.createMediaStreamSource(stream);
             analyser = audioCtx.createAnalyser();
             
-            analyser.fftSize = 512;
-            analyser.smoothingTimeConstant = 0.5;
+            // Set FFT size from select or saved resolution
+            const fftSelect = document.getElementById('fftSelect');
+            const savedResolution = localStorage.getItem('visualizer-resolution');
+            analyser.fftSize = savedResolution ? parseInt(savedResolution) : (fftSelect ? parseInt(fftSelect.value) : 512);
+            
+            // Set smoothing from slider or saved smoothing
+            const smoothingSlider = document.getElementById('smoothingSlider');
+            const savedSmoothing = localStorage.getItem('visualizer-smoothing');
+            analyser.smoothingTimeConstant = savedSmoothing ? parseFloat(savedSmoothing) : (smoothingSlider ? parseFloat(smoothingSlider.value) : 0.5);
             
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
@@ -465,18 +552,158 @@ function initAudio() {
         });
 }
 
-// Initialize on page load
+// ─── Controls Menu & JS-Python Bridge ────────────────
+let menuOpen = false;
+
+// Update visibility of style-specific settings controls
+function updateControlsVisibility() {
+    const smoothingGroup = document.getElementById('smoothingGroup');
+    if (smoothingGroup) {
+        if (currentStyle === 'wave' || currentStyle === 'oscilloscope') {
+            smoothingGroup.style.display = 'none';
+        } else {
+            smoothingGroup.style.display = 'flex';
+        }
+    }
+}
+
+// Toggle display state of the controls settings menu
+function toggleMenu(forceState) {
+    menuOpen = (forceState !== undefined) ? forceState : !menuOpen;
+    const menuEl = document.getElementById('controlsMenu');
+    
+    const heightParam = parseInt(urlParams.get('height') || '45');
+    menuEl.style.bottom = `${heightParam + 5}px`;
+    menuEl.style.display = menuOpen ? 'block' : 'none';
+    
+    // Notify python wrapper of the state change to resize window and adjust input shape
+    document.title = JSON.stringify({
+        action: "menu-toggle",
+        open: menuOpen
+    });
+}
+
+// Initialize controls on load
 window.addEventListener('load', () => {
+    // Load persisted settings from localStorage
+    const savedStyle = localStorage.getItem('visualizer-style');
+    if (savedStyle) {
+        currentStyle = savedStyle;
+    }
+    const savedSensitivity = localStorage.getItem('visualizer-sensitivity');
+    if (savedSensitivity) {
+        sensitivityMultiplier = parseFloat(savedSensitivity);
+    }
+    const savedScanlines = localStorage.getItem('visualizer-scanlines');
+    if (savedScanlines) {
+        document.body.style.setProperty('--scanlines-opacity', savedScanlines);
+    }
+
     // Attempt initialization automatically
-    // (WebKitGTK does not require user gestures if audio permissions are granted programmatically)
     initAudio();
+
+    // Setup visualizer height styling from query parameters
+    const heightParam = parseInt(urlParams.get('height') || '45');
+    canvas.style.height = `${heightParam}px`;
+    
+    const trigger = document.getElementById('controlsTrigger');
+    trigger.style.height = `${heightParam}px`;
+
+    // Populate active device label from query params
+    const rawDevice = urlParams.get('device') || 'Default';
+    const deviceLabel = document.getElementById('deviceLabel');
+    if (deviceLabel) {
+        // Shorten device name for display
+        const displayDevice = rawDevice.split('.').pop() || rawDevice;
+        deviceLabel.innerText = `Source: ${displayDevice}`;
+    }
+
+    // Pre-select current style in dropdown and update visibility
+    const styleSelect = document.getElementById('styleSelect');
+    if (styleSelect) {
+        styleSelect.value = currentStyle;
+        styleSelect.addEventListener('change', (e) => {
+            currentStyle = e.target.value;
+            localStorage.setItem('visualizer-style', currentStyle);
+            updateControlsVisibility();
+        });
+    }
+    updateControlsVisibility();
+
+    // Sensitivity / Gain slider listener
+    const gainSlider = document.getElementById('gainSlider');
+    if (gainSlider) {
+        gainSlider.value = sensitivityMultiplier;
+        gainSlider.addEventListener('input', (e) => {
+            sensitivityMultiplier = parseFloat(e.target.value);
+            localStorage.setItem('visualizer-sensitivity', e.target.value);
+        });
+    }
+
+    // Smoothing slider listener
+    const smoothingSlider = document.getElementById('smoothingSlider');
+    if (smoothingSlider) {
+        const savedSmoothing = localStorage.getItem('visualizer-smoothing');
+        if (savedSmoothing) smoothingSlider.value = savedSmoothing;
+        smoothingSlider.addEventListener('input', (e) => {
+            if (analyser) {
+                analyser.smoothingTimeConstant = parseFloat(e.target.value);
+            }
+            localStorage.setItem('visualizer-smoothing', e.target.value);
+        });
+    }
+
+    // Scanlines opacity slider listener
+    const scanlinesSlider = document.getElementById('scanlinesSlider');
+    if (scanlinesSlider) {
+        const savedScanlines = localStorage.getItem('visualizer-scanlines');
+        if (savedScanlines) scanlinesSlider.value = savedScanlines;
+        scanlinesSlider.addEventListener('input', (e) => {
+            document.body.style.setProperty('--scanlines-opacity', parseFloat(e.target.value));
+            localStorage.setItem('visualizer-scanlines', e.target.value);
+        });
+    }
+
+    // Resolution / FFT size dropdown listener
+    const fftSelect = document.getElementById('fftSelect');
+    if (fftSelect) {
+        const savedResolution = localStorage.getItem('visualizer-resolution');
+        if (savedResolution) fftSelect.value = savedResolution;
+        fftSelect.addEventListener('change', (e) => {
+            const newFftSize = parseInt(e.target.value);
+            if (analyser && analyser.fftSize !== newFftSize) {
+                analyser.fftSize = newFftSize;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                waveArray = new Uint8Array(bufferLength);
+            }
+            localStorage.setItem('visualizer-resolution', e.target.value);
+        });
+    }
+
+    // Toggle menu click listener
+    if (trigger) {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMenu();
+        });
+    }
+
+    // Close button click listener
+    const closeBtn = document.getElementById('closeButton');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.title = JSON.stringify({ action: "close" });
+        });
+    }
+
+    // Close menu when clicking outside of it
+    document.addEventListener('click', (e) => {
+        const menuEl = document.getElementById('controlsMenu');
+        if (menuOpen && menuEl && !menuEl.contains(e.target) && e.target !== trigger) {
+            toggleMenu(false);
+        }
+    });
 });
 
-// Fallback: Click to trigger in standard browsers due to autoplay restrictions
-document.body.addEventListener('click', () => {
-    if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    } else {
-        initAudio();
-    }
-});

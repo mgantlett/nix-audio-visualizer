@@ -14,3 +14,7 @@
 .vscode/
 __pycache__/
 *.pyc
+
+# Local envrc / direnv
+.direnv/
+.envrc

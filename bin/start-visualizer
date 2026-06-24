@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# start-visualizer - Easy launch helper for Nix Audio Visualizer
+# Autonomously created by Agile Development OS (v.1.x)
+
+# Resolve path of the project root
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Run python desktop wrapper inside or outside the development nix-shell
+if [ -n "$IN_NIX_SHELL" ]; then
+    exec env __NV_DISABLE_EXPLICIT_SYNC=1 python3 "$ROOT_DIR/desktop-visualizer.py" "$@"
+else
+    exec nix-shell "$ROOT_DIR/shell.nix" --run "__NV_DISABLE_EXPLICIT_SYNC=1 python3 \"$ROOT_DIR/desktop-visualizer.py\" $*"
+fi

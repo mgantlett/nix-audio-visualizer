@@ -7,6 +7,55 @@
 </head>
 <body>
     <canvas id="visualizerCanvas"></canvas>
+    
+    <!-- Floating Gear Trigger -->
+    <div id="controlsTrigger" title="Open Settings">⚙️</div>
+    
+    <!-- Controls Popup Menu -->
+    <div id="controlsMenu">
+        <h3>Visualizer Controls</h3>
+        
+        <div class="menu-group">
+            <label for="styleSelect">Style:</label>
+            <select id="styleSelect">
+                <option value="bars">Classic Bars</option>
+                <option value="eq">LED Equalizer</option>
+                <option value="wave">Oscilloscope</option>
+                <option value="pulse">Neural Pulse</option>
+            </select>
+        </div>
+        
+        <div class="menu-group">
+            <label for="gainSlider">Sensitivity:</label>
+            <input type="range" id="gainSlider" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 120px; cursor: pointer;">
+        </div>
+        
+        <div class="menu-group" id="smoothingGroup">
+            <label for="smoothingSlider">Smoothing:</label>
+            <input type="range" id="smoothingSlider" min="0.0" max="0.95" step="0.05" value="0.5" style="width: 120px; cursor: pointer;">
+        </div>
+
+        <div class="menu-group">
+            <label for="scanlinesSlider">Scanlines:</label>
+            <input type="range" id="scanlinesSlider" min="0.0" max="0.8" step="0.05" value="0.35" style="width: 120px; cursor: pointer;">
+        </div>
+
+        <div class="menu-group">
+            <label for="fftSelect">Resolution:</label>
+            <select id="fftSelect">
+                <option value="256">Low</option>
+                <option value="512" selected>Medium</option>
+                <option value="1024">High</option>
+            </select>
+        </div>
+        
+        <div class="menu-group device-info">
+            <div id="deviceLabel">Active Source: Default</div>
+        </div>
+        
+        <button id="closeButton">Close Visualizer</button>
+    </div>
+
     <script src="main.js"></script>
 </body>
 </html>
