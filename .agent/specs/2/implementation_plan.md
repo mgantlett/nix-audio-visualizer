@@ -1,58 +1,81 @@
-# Implementation Plan - Refining Target Device Selection & Controls Menu
+# Implement Unified Multi-Repository Swarm Cockpit (Task 331)
 
-Refine target audio device selection using an auto-routing Gtk/PulseAudio background thread, fix click-through window focusing using GtkLayerShell BOTTOM layer anchoring, and implement interactive settings controls.
+Provide exactly one Swarm Cockpit dashboard running on port 8088 by default, with the ability to dynamically detect and swap the workspace context to any neighboring repository.
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Neighbor Discovery Pathing:** Our proposed scanner searches:
+>    - Sibling checkouts in the parent folder of the active repo (e.g., `~/Projects/*`).
+>    - Folders inside the path specified by `ADO_NEIGHBORS_DIR` in `~/.global.ado.config.env` (if defined).
+>    Are there other workspace directory patterns we should scan?
+> 2. **Dropdown Label Format:** We propose displaying the repository directory's basename in the select dropdown and showing the absolute path as a tooltip. Does that align with your preference?
 
 ## Proposed Changes
 
-### [Nix Development Environment]
+### Telemetry Server & Route Handlers
 
-#### [MODIFY] [shell.nix](file:///home/markg/Projects/nix-audio-visualizer/shell.nix)
-Update default shell startup command instruction.
+#### [MODIFY] [server.ts](file:///home/markg/Projects/ado-core/src/control-plane-backend/server.ts)
+- Change `const repoRoot` to a mutable `let repoRoot`.
+- Implement `GET /api/context/list` to return:
+  - Discovered neighboring repositories containing a `.agent` folder.
+  - The current active `repoRoot` path.
+- Implement `POST /api/context` which:
+  - Takes `{ repoRoot: string }` in the body.
+  - Verifies the directory path exists and contains a `.agent` folder.
+  - Updates the active backend `repoRoot` variable.
+  - Restarts the telemetry background polling and worker status loops pointing to the new root.
 
-### [Visualizer Shell Wrapper]
+### Dashboard Launcher & Router Scripts
 
-#### [MODIFY] [desktop-visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/desktop-visualizer.py)
-Update layer placement to Layer.BOTTOM, add auto-routing daemon thread, dynamic cairo clipping calculations, and connect Gwebview title changed and window size-allocate signals.
-- Added export `make_click_through`
-- Added export `update_input_shape`
-- Added export `on_title_changed`
-- Added export `auto_route_audio`
-- Added export `main`
-- Imported package `json`
-- Imported package `subprocess`
-- Imported package `time`
-- Imported package `threading`
+#### [MODIFY] [dashboard.sh](file:///home/markg/Projects/ado-core/plugins-available/core/dashboard.sh)
+- Reconfigure the default `SELECTED_PORT` to always be `8088`.
+- If a server on `8088` is already active:
+  - Verify if its `repoRoot` matches the current workspace root.
+  - If they do not match, send a `POST /api/context` request to reuse the active server and switch its context to the current workspace root.
+  - Skip starting a new backend process if successfully reused/swapped.
+- Add `stop`/`--stop` argument parsing to kill any active `control-plane-backend/dist/server.js` processes.
 
-### [Visualizer Web Application]
+#### [MODIFY] [swarm_router.sh](file:///home/markg/Projects/ado-core/plugins-available/swarm/swarm_router.sh)
+- Forward trailing arguments of `swarm ui` down to `core_dashboard --web "$@"`.
 
-#### [MODIFY] [index.html](file:///home/markg/Projects/nix-audio-visualizer/visualizer/index.html)
-Add interactive Sensitivity range slider, Smoothing slider, Scanlines opacity slider, and Resolution dropdown menu controls. Add an ID to the smoothing control group to support dynamic visibility.
+### Go TUI Dashboard
 
-#### [MODIFY] [style.css](file:///home/markg/Projects/nix-audio-visualizer/visualizer/style.css)
-Adjust menu height sizing and formatting styles. Style select elements with `appearance: none` and dark background dropdown options to resolve white-on-white contrast issues. Style custom range inputs.
+#### [MODIFY] [update_events.go](file:///home/markg/Projects/ado-core/src/dashboard/update_events.go)
+- Separate key bindings for `w` and `W`:
+  - `w` will launch the Swarm Control Plane Web UI.
+  - `W` will stop/kill the active Web UI telemetry server by calling `bin/agent swarm ui stop`.
 
-#### [MODIFY] [main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js)
-Implement manual sensitivity multiplier, waveform AGC, and bind event handlers to gainSlider, fftSelect, smoothingSlider, and scanlinesSlider inputs.
-- Load and persist all user control choices to `localStorage` across visualizer restarts.
-- Dynamically hide the "Smoothing" parameter control when in "Oscilloscope" style.
-- Resolve canvas height scaling issue and add zero-crossing trigger for oscilloscope stabilization.
+### Frontend User Interface
 
-### [Verification Suite]
+#### [MODIFY] [index.html](file:///home/markg/Projects/ado-core/src/control-plane-ui/index.html)
+- Add a `<select id="workspace-context-switcher">` dropdown element to the header bar for swapping between discovered workspaces.
 
-#### [MODIFY] [test_visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/test_visualizer.py)
-Add verification assertions for the --device CLI option.
-- Added export `test_arg_parsing`
-
-### [Agile Infrastructure]
-
-#### [MODIFY] [.ado-core](file:///home/markg/Projects/nix-audio-visualizer/.ado-core)
-Update submodule reference to align tooling.
-
-#### [NEW] [CHANGELOG.md](file:///home/markg/Projects/nix-audio-visualizer/CHANGELOG.md)
-Create project changelog file.
+#### [MODIFY] [app.ts](file:///home/markg/Projects/ado-core/src/control-plane-ui/ts/app.ts)
+- Implement `initWorkspaceContextSwitcher()` to:
+  - Retrieve the discovered repositories and active context from `/api/context/list`.
+  - Populate the select dropdown.
+  - Bind a change listener to send a `POST /api/context` payload when a different context is selected.
+  - On success, trigger `refreshData()` to reload the dashboard state.
+- Wire up `initWorkspaceContextSwitcher()` inside the window load listener.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `nix-shell --run "bin/agent verify dod"` to verify all lints, code style alignments, and unit tests pass.
-- Run `nix-shell --run "bin/agent test"` to run CLI verification tests.
+- Build UI, server, and Go TUI:
+  ```bash
+  nix-shell --run "npm run server:build && npm run dashboard:build"
+  ```
+- Run control plane backend BATS suite to ensure existing APIs behave correctly:
+  ```bash
+  nix-shell --run "./test/bats/bin/bats test/control_plane_backend.bats"
+  ```
+- Run the full Definition of Done check:
+  ```bash
+  nix-shell --run "bin/agent verify dod"
+  ```
+
+### Manual Verification
+- Run `bin/agent dashboard --web` in `ado-core` to spin up the server on port 8088.
+- Run `bin/agent dashboard --web` in a neighboring repository, verifying it successfully switches the active backend context without spawning a second telemetry process.
+- Open the dashboard in the browser, verifying the switcher dropdown displays all neighboring repos and successfully swaps contexts on demand.
