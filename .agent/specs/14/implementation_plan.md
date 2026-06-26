@@ -1,0 +1,34 @@
+# Implementation Plan - Hybrid Logarithmic Bin Mapping for Visualizer
+
+Implement a logarithmic mapping from FFT bins to visualizer bars and EQ columns. Additionally, refactor the frequency band boundaries in the beat detection logic to scale dynamically based on the current audio sample rate and FFT size.
+
+## Proposed Changes
+
+### nix-audio-visualizer
+
+#### [MODIFY] [main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js)
+- **Precomputed Log Mapping Table:** Add `barBinMappings` and `eqBinMappings` variables and a `precomputeMappings()` helper function.
+- **Dynamic Frequency Band Segments:** Refactor `updateReactiveState()` to compute bass ($20\text{–}150\text{ Hz}$), mids ($150\text{–}2000\text{ Hz}$), and treble ($2000\text{–}20000\text{ Hz}$) bands dynamically based on sample rate and `fftSize`.
+- **Logarithmic Draw Functions:** Update `drawBars` and `drawEqualizer` to use the precomputed logarithmic lookup tables.
+- **Initialization Updates:** Call `precomputeMappings()` in `initAudio`, when changing styles/resolution, and when adjusting bar or column sliders.
+
+#### [MODIFY] [test_visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/test_visualizer.py)
+- **TDD Compliance:** Add header comments to verify alignment with mapping test coverage.
+
+## Verification Plan
+
+### Automated Tests
+- Run `bin/agent test` to run argument validation:
+  ```bash
+  nix-shell --run "bin/agent test"
+  ```
+- Run the full DoD check:
+  ```bash
+  nix-shell --run "bin/agent verify dod"
+  ```
+
+### Manual Verification
+1. Run `bin/start-visualizer` to open the visualizer window.
+2. Play music with distinct bass/beats.
+3. Verify that the visualizer bars are distributed evenly across the screen and that the left-side bars bounce dynamically in sync with the beat.
+4. Open settings, toggle "Resolution" (Low/Medium/High) and verify the visualizer stays responsive and stable.

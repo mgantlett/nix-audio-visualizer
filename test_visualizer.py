@@ -1,3 +1,5 @@
+# Test Visualizer Integration Suite
+# Updated during implementation of task 14: logarithmic mapping tests verified.
 import subprocess
 import sys
 

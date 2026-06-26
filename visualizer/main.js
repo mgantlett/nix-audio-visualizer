@@ -12,25 +12,25 @@ let currentStyle = urlParams.get('style') || 'bars'; // 'bars', 'eq', 'wave', 'p
 const styleSettings = {
     bars: {
         theme: 'cyberpunk',
-        sensitivity: 1.0,
-        smoothing: 0.5,
+        sensitivity: 1.2,
+        smoothing: 0.55,
         scanlines: 0.35,
         resolution: 512,
         minDb: -90,
-        beatSense: 0.45,
+        beatSense: 0.25,
         // Style-specific
         barsCount: 64,
         barGap: 2,
-        peakDecay: 0.99
+        peakDecay: 0.975
     },
     eq: {
         theme: 'cyberpunk',
-        sensitivity: 1.0,
-        smoothing: 0.5,
+        sensitivity: 1.2,
+        smoothing: 0.55,
         scanlines: 0.35,
         resolution: 512,
         minDb: -90,
-        beatSense: 0.45,
+        beatSense: 0.25,
         // Style-specific
         eqColumns: 24,
         segHeight: 4,
@@ -43,19 +43,19 @@ const styleSettings = {
         scanlines: 0.35,
         resolution: 512,
         minDb: -90,
-        beatSense: 0.45,
+        beatSense: 0.25,
         // Style-specific
         lineWidth: 2.5,
         glowIntensity: 0.6
     },
     pulse: {
         theme: 'cyberpunk',
-        sensitivity: 1.0,
-        smoothing: 0.5,
+        sensitivity: 1.2,
+        smoothing: 0.55,
         scanlines: 0.35,
         resolution: 512,
         minDb: -90,
-        beatSense: 0.45,
+        beatSense: 0.25,
         // Style-specific
         orbiters: 8,
         ringSpeed: 1.5
@@ -64,16 +64,16 @@ const styleSettings = {
 
 // Global active parameter state variables (mapped from active style configuration)
 let currentTheme = 'cyberpunk';
-let sensitivityMultiplier = 1.0;
-let smoothingValue = 0.5;
+let sensitivityMultiplier = 1.2;
+let smoothingValue = 0.55;
 let minDecibelsValue = -90;
-let beatThresholdValue = 0.45;
+let beatThresholdValue = 0.25;
 let fftSizeValue = 512;
 
 // Style-specific state variables
 let barsCount = 64;
 let barGap = 2;
-let peakDecay = 0.99;
+let peakDecay = 0.975;
 let eqColumns = 24;
 let segHeight = 4;
 let segGap = 2;
@@ -81,6 +81,74 @@ let oscLineWidth = 2.5;
 let oscGlowIntensity = 0.6;
 let orbiterCount = 8;
 let ringSpeed = 1.5;
+
+// Precomputed mapping lookup tables
+let barBinMappings = [];
+let eqBinMappings = [];
+
+// Interpolate frequency data at a fractional bin index
+function getInterpolatedBinValue(fractionalBin) {
+    if (!dataArray || dataArray.length === 0) return 0;
+    const idx = Math.max(0, Math.min(dataArray.length - 1, fractionalBin));
+    const low = Math.floor(idx);
+    const high = Math.ceil(idx);
+    if (low === high) return dataArray[low];
+    const weight = idx - low;
+    return dataArray[low] * (1 - weight) + dataArray[high] * weight;
+}
+
+// Calculate the visual value using precomputed mapping
+function getMappedValue(mapping) {
+    if (!dataArray || dataArray.length === 0) return 0;
+    const { start, end } = mapping;
+    if (end - start < 1.0) {
+        // Narrow range: interpolate center point
+        return getInterpolatedBinValue((start + end) / 2) / 255;
+    } else {
+        // Wide range: average all bins spanned
+        let sum = 0;
+        let count = 0;
+        const startBin = Math.floor(start);
+        const endBin = Math.ceil(end);
+        for (let b = startBin; b <= endBin && b < dataArray.length; b++) {
+            sum += dataArray[b];
+            count++;
+        }
+        return (sum / (count || 1)) / 255;
+    }
+}
+
+// Precompute logarithmic bin mappings for bars and eqColumns
+function precomputeMappings() {
+    barBinMappings = [];
+    eqBinMappings = [];
+    
+    const sampleRate = (audioCtx && audioCtx.sampleRate) ? audioCtx.sampleRate : 48000;
+    const binCount = fftSizeValue / 2;
+    
+    const buildMapping = (targetCount) => {
+        const mappings = [];
+        const minFreq = 20; // Hz
+        const maxFreq = 16000; // Hz
+        
+        for (let i = 0; i < targetCount; i++) {
+            const fStart = minFreq * Math.pow(maxFreq / minFreq, i / targetCount);
+            const fEnd = minFreq * Math.pow(maxFreq / minFreq, (i + 1) / targetCount);
+            
+            const binStart = (fStart * fftSizeValue) / sampleRate;
+            const binEnd = (fEnd * fftSizeValue) / sampleRate;
+            
+            mappings.push({
+                start: Math.max(0, binStart),
+                end: Math.min(binCount - 1, binEnd)
+            });
+        }
+        return mappings;
+    };
+    
+    barBinMappings = buildMapping(barsCount);
+    eqBinMappings = buildMapping(eqColumns);
+}
 
 let isSuppressingEvents = false;
 const varSetters = {
@@ -203,20 +271,25 @@ ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 // ─── Style 1: Classic Bars ─────────────────────────
 function drawBars(width, height) {
-    const bars = Math.min(dataArray.length, barsCount);
+    if (!barBinMappings || barBinMappings.length !== barsCount) {
+        precomputeMappings();
+    }
+    const bars = barsCount;
     const barWidth = width / bars;
     const gap = barGap;
 
     // AGC Peak Search
     let frameMax = 0;
     for (let i = 0; i < bars; i++) {
-        const val = (dataArray[i] ?? 0) / 255;
+        const mapping = barBinMappings[i];
+        const val = mapping ? getMappedValue(mapping) : 0;
         if (val > frameMax) frameMax = val;
     }
     updatePeak(frameMax);
 
     for (let i = 0; i < bars; i++) {
-        const rawValue = (dataArray[i] ?? 0) / 255;
+        const mapping = barBinMappings[i];
+        const rawValue = mapping ? getMappedValue(mapping) : 0;
         const value = Math.min(1.0, (rawValue / (peakLevel * 1.0)) * sensitivityMultiplier);
         
         const barHeight = value * (height * 0.9);
@@ -239,6 +312,9 @@ function drawBars(width, height) {
 
 // ─── Style 2: LED Equalizer ────────────────────────
 function drawEqualizer(width, height) {
+    if (!eqBinMappings || eqBinMappings.length !== eqColumns) {
+        precomputeMappings();
+    }
     const bars = eqColumns;
     const barWidth = width / bars;
     const gap = 3;
@@ -248,15 +324,15 @@ function drawEqualizer(width, height) {
 
     let frameMax = 0;
     for (let i = 0; i < bars; i++) {
-        const idx = Math.floor((i / bars) * Math.min(dataArray.length, 64));
-        const val = (dataArray[idx] ?? 0) / 255;
+        const mapping = eqBinMappings[i];
+        const val = mapping ? getMappedValue(mapping) : 0;
         if (val > frameMax) frameMax = val;
     }
     updatePeak(frameMax);
 
     for (let i = 0; i < bars; i++) {
-        const idx = Math.floor((i / bars) * Math.min(dataArray.length, 64));
-        const rawValue = (dataArray[idx] ?? 0) / 255;
+        const mapping = eqBinMappings[i];
+        const rawValue = mapping ? getMappedValue(mapping) : 0;
         const value = Math.min(1.0, (rawValue / (peakLevel * 1.0)) * sensitivityMultiplier);
         const litSegments = Math.floor(value * totalSegments);
 
@@ -478,16 +554,32 @@ function updateReactiveState() {
     if (!dataArray || dataArray.length === 0) return;
 
     const len = dataArray.length;
+    const sampleRate = (audioCtx && audioCtx.sampleRate) ? audioCtx.sampleRate : 48000;
 
-    // Filter frequency bands
+    // Filter frequency bands dynamically based on sampleRate and fftSize (20-150Hz, 150-2000Hz, 2000-20000Hz)
+    const bassEndBin = Math.max(1, Math.round((150 * fftSizeValue) / sampleRate));
+    const midsEndBin = Math.max(bassEndBin + 1, Math.round((2000 * fftSizeValue) / sampleRate));
+    const trebleEndBin = Math.min(len - 1, Math.max(midsEndBin + 1, Math.round((20000 * fftSizeValue) / sampleRate)));
+
     let bassSum = 0, midsSum = 0, trebleSum = 0;
-    for (let i = 0; i < Math.min(8, len); i++) bassSum += dataArray[i];
-    for (let i = 8; i < Math.min(32, len); i++) midsSum += dataArray[i];
-    for (let i = 32; i < len; i++) trebleSum += dataArray[i];
+    let bassCount = 0, midsCount = 0, trebleCount = 0;
 
-    const rawBass = bassSum / (8 * 255);
-    const rawMids = midsSum / (24 * 255);
-    const rawTreble = trebleSum / ((len - 32) * 255);
+    for (let i = 0; i < len; i++) {
+        if (i <= bassEndBin) {
+            bassSum += dataArray[i];
+            bassCount++;
+        } else if (i <= midsEndBin) {
+            midsSum += dataArray[i];
+            midsCount++;
+        } else if (i <= trebleEndBin) {
+            trebleSum += dataArray[i];
+            trebleCount++;
+        }
+    }
+
+    const rawBass = bassSum / ((bassCount || 1) * 255);
+    const rawMids = midsSum / ((midsCount || 1) * 255);
+    const rawTreble = trebleSum / ((trebleCount || 1) * 255);
 
     smoothBass = smoothBass * SMOOTH + rawBass * (1 - SMOOTH);
     smoothMids = smoothMids * SMOOTH + rawMids * (1 - SMOOTH);
@@ -561,114 +653,57 @@ function render() {
 // Helper to formulate audio constraints depending on device matching
 function getAudioConstraints(devices) {
     const audioDevices = devices.filter(d => d.kind === 'audioinput');
-    const targetDevice = audioDevices.find(d => 
-        d.label && (
-            d.label.toLowerCase().includes('hdmi') || 
-            d.label.toLowerCase().includes('ad103') || 
-            d.label.toLowerCase().includes('7.1')
-        )
-    ) || (audioDevices.length >= 3 ? audioDevices[2] : null);
-
-    const isSurround = targetDevice && targetDevice.label && (
-        targetDevice.label.toLowerCase().includes('hdmi') || 
-        targetDevice.label.toLowerCase().includes('ad103') || 
-        targetDevice.label.toLowerCase().includes('7.1')
-    );
-
-    const constraints = targetDevice 
-        ? { 
-            audio: { 
-                deviceId: { exact: targetDevice.deviceId },
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-                channelCount: { ideal: isSurround ? 8 : 2 }
-            }, 
-            video: false 
-          }
-        : { 
+    const matchStr = d => d.label && /hdmi|ad103|7\.1/i.test(d.label);
+    const targetDevice = audioDevices.find(matchStr) || (audioDevices.length >= 3 ? audioDevices[2] : null);
+    const isSurround = targetDevice && matchStr(targetDevice);
+    return {
+        constraints: {
             audio: {
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-                channelCount: { ideal: 2 }
-            }, 
-            video: false 
-          };
-
-    return { constraints, targetDevice };
+                deviceId: targetDevice ? { exact: targetDevice.deviceId } : undefined,
+                echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+                channelCount: { ideal: isSurround ? 8 : 2 }
+            },
+            video: false
+        },
+        targetDevice
+    };
 }
 
-// ─── Audio Input Initialization ────────────────────
 function initAudio() {
-    if (audioCtx) return; // Prevent double init
-
+    if (audioCtx) return;
+    const baseConstraints = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } }, video: false };
     navigator.mediaDevices.enumerateDevices()
         .then(devices => {
             const audioDevices = devices.filter(d => d.kind === 'audioinput');
-            const hasLabels = audioDevices.some(d => d.label && d.label.length > 0);
-
-            if (hasLabels) {
-                console.log("Audio device labels available directly. Discovered devices:", audioDevices.map(d => `${d.label} (${d.deviceId})`));
-                const { constraints, targetDevice } = getAudioConstraints(audioDevices);
-
-                if (targetDevice) {
-                    console.log("Selecting target device:", targetDevice.label, "ID:", targetDevice.deviceId);
-                } else {
-                    console.log("No target device matched directly. Using default stream constraints.");
-                }
+            if (audioDevices.some(d => d.label)) {
+                const { constraints } = getAudioConstraints(audioDevices);
                 return navigator.mediaDevices.getUserMedia(constraints);
-            } else {
-                console.log("Audio device labels empty. Requesting permission stream first...");
-                return navigator.mediaDevices.getUserMedia({ 
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false,
-                        channelCount: { ideal: 2 }
-                    }, 
-                    video: false 
-                })
-                    .then(initialStream => {
-                        return navigator.mediaDevices.enumerateDevices()
-                            .then(newDevices => {
-                                console.log("Discovered devices post-permission:", newDevices.map(d => `${d.kind}: ${d.label} (${d.deviceId})`));
-                                const newAudioDevices = newDevices.filter(d => d.kind === 'audioinput');
-                                const { constraints, targetDevice } = getAudioConstraints(newAudioDevices);
-
-                                if (targetDevice) {
-                                    console.log("Found target device:", targetDevice.label, "ID:", targetDevice.deviceId);
-                                    const activeTrack = initialStream.getAudioTracks()[0];
-                                    const activeSettings = activeTrack ? activeTrack.getSettings() : {};
-                                    
-                                    if (activeSettings.deviceId !== targetDevice.deviceId) {
-                                        console.log("Switching input to target device:", targetDevice.label);
-                                        if (activeTrack) activeTrack.stop();
-                                        return navigator.mediaDevices.getUserMedia(constraints);
-                                    }
-                                }
-                                return initialStream;
-                            });
-                    });
             }
+            return navigator.mediaDevices.getUserMedia(baseConstraints)
+                .then(initialStream => navigator.mediaDevices.enumerateDevices().then(newDevices => {
+                    const { constraints, targetDevice } = getAudioConstraints(newDevices.filter(d => d.kind === 'audioinput'));
+                    if (targetDevice) {
+                        const track = initialStream.getAudioTracks()[0];
+                        if (track && track.getSettings().deviceId !== targetDevice.deviceId) {
+                            track.stop();
+                            return navigator.mediaDevices.getUserMedia(constraints);
+                        }
+                    }
+                    return initialStream;
+                }));
         })
         .then(stream => {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioCtx.createMediaStreamSource(stream);
             analyser = audioCtx.createAnalyser();
-            
-            // Set initial state from variables/loads
             analyser.fftSize = fftSizeValue;
             analyser.smoothingTimeConstant = smoothingValue;
             analyser.minDecibels = minDecibelsValue;
-            
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
             waveArray = new Uint8Array(bufferLength);
-            
             source.connect(analyser);
-            
-            console.log("🔊 Desktop Audio Analyser started successfully!");
+            precomputeMappings();
             render();
         })
         .catch(err => {
@@ -733,58 +768,26 @@ function applyStyleSettings() {
         // Set scanlines opacity in style
         document.body.style.setProperty('--scanlines-opacity', config.scanlines);
 
-        // Update UI controls to match
-        const themeSelect = document.getElementById('themeSelect');
-        if (themeSelect) themeSelect.value = currentTheme;
+        const updateVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        updateVal('themeSelect', currentTheme);
+        updateVal('gainSlider', sensitivityMultiplier);
+        updateVal('smoothingSlider', smoothingValue);
+        updateVal('scanlinesSlider', config.scanlines);
+        updateVal('fftSelect', fftSizeValue);
+        updateVal('dbSlider', minDecibelsValue);
+        updateVal('beatSlider', beatThresholdValue);
+        updateVal('barsSlider', barsCount);
+        updateVal('barGapSlider', barGap);
+        updateVal('decaySlider', peakDecay);
+        updateVal('eqColumnsSlider', eqColumns);
+        updateVal('segHeightSlider', segHeight);
+        updateVal('segGapSlider', segGap);
+        updateVal('lineWidthSlider', oscLineWidth);
+        updateVal('glowSlider', oscGlowIntensity);
+        updateVal('orbitersSlider', orbiterCount);
+        updateVal('ringSpeedSlider', ringSpeed);
 
-        const gainSlider = document.getElementById('gainSlider');
-        if (gainSlider) gainSlider.value = sensitivityMultiplier;
-
-        const smoothingSlider = document.getElementById('smoothingSlider');
-        if (smoothingSlider) smoothingSlider.value = smoothingValue;
-
-        const scanlinesSlider = document.getElementById('scanlinesSlider');
-        if (scanlinesSlider) scanlinesSlider.value = config.scanlines;
-
-        const fftSelect = document.getElementById('fftSelect');
-        if (fftSelect) fftSelect.value = fftSizeValue;
-
-        const dbSlider = document.getElementById('dbSlider');
-        if (dbSlider) dbSlider.value = minDecibelsValue;
-
-        const beatSlider = document.getElementById('beatSlider');
-        if (beatSlider) beatSlider.value = beatThresholdValue;
-
-        // Style-specific UI controls
-        const barsSlider = document.getElementById('barsSlider');
-        if (barsSlider) barsSlider.value = barsCount;
-
-        const barGapSlider = document.getElementById('barGapSlider');
-        if (barGapSlider) barGapSlider.value = barGap;
-
-        const decaySlider = document.getElementById('decaySlider');
-        if (decaySlider) decaySlider.value = peakDecay;
-
-        const eqColumnsSlider = document.getElementById('eqColumnsSlider');
-        if (eqColumnsSlider) eqColumnsSlider.value = eqColumns;
-
-        const segHeightSlider = document.getElementById('segHeightSlider');
-        if (segHeightSlider) segHeightSlider.value = segHeight;
-
-        const segGapSlider = document.getElementById('segGapSlider');
-        if (segGapSlider) segGapSlider.value = segGap;
-
-        const lineWidthSlider = document.getElementById('lineWidthSlider');
-        if (lineWidthSlider) lineWidthSlider.value = oscLineWidth;
-
-        const glowSlider = document.getElementById('glowSlider');
-        if (glowSlider) glowSlider.value = oscGlowIntensity;
-
-        const orbitersSlider = document.getElementById('orbitersSlider');
-        if (orbitersSlider) orbitersSlider.value = orbiterCount;
-
-        const ringSpeedSlider = document.getElementById('ringSpeedSlider');
-        if (ringSpeedSlider) ringSpeedSlider.value = ringSpeed;
+        precomputeMappings();
     } finally {
         isSuppressingEvents = false;
     }
@@ -945,6 +948,9 @@ window.addEventListener('load', () => {
                 }
                 
                 if (item.cb) item.cb(val);
+                if (item.key === 'barsCount' || item.key === 'eqColumns' || item.key === 'resolution') {
+                    precomputeMappings();
+                }
                 saveAllSettings();
             });
         }
