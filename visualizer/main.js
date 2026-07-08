@@ -7,6 +7,13 @@ const ctx = canvas.getContext('2d');
 // Read current style from query parameter (default: bars)
 const urlParams = new URLSearchParams(window.location.search);
 let currentStyle = urlParams.get('style') || 'bars'; // 'bars', 'eq', 'wave', 'pulse'
+const currentPosition = urlParams.get('position') || 'bottom';
+const isVertical = currentPosition === 'left' || currentPosition === 'right';
+let helpOpen = false;
+let toggleHelp = null;
+const isLeft = currentPosition === 'left';
+const isRight = currentPosition === 'right';
+const visThickness = parseInt(urlParams.get('height') || '45');
 
 // Unified Style-Specific Configurations mapping
 const styleSettings = {
@@ -59,6 +66,53 @@ const styleSettings = {
         // Style-specific
         orbiters: 8,
         ringSpeed: 1.5
+    },
+    vu: {
+        theme: 'cyberpunk',
+        sensitivity: 1.5,
+        smoothing: 0.3,
+        scanlines: 0.35,
+        resolution: 256,
+        minDb: -90,
+        beatSense: 0.25,
+        // Style-specific
+        vuSegments: 40,
+        vuGap: 3
+    },
+    waterfall: {
+        theme: 'cyberpunk',
+        sensitivity: 1.2,
+        smoothing: 0.4,
+        scanlines: 0.35,
+        resolution: 256,
+        minDb: -90,
+        beatSense: 0.25,
+        // Style-specific
+        waterfallSpeed: 4
+    },
+    ribbon: {
+        theme: 'cyberpunk',
+        sensitivity: 1.5,
+        smoothing: 0.6,
+        scanlines: 0.35,
+        resolution: 512,
+        minDb: -90,
+        beatSense: 0.25,
+        // Style-specific
+        ribbonThickness: 3.5,
+        ribbonGlow: 0.7
+    },
+    particles: {
+        theme: 'cyberpunk',
+        sensitivity: 1.0,
+        smoothing: 0.5,
+        scanlines: 0.15,
+        resolution: 256,
+        minDb: -90,
+        beatSense: 0.3,
+        // Style-specific
+        particleCount: 60,
+        particleSpeed: 1.0
     }
 };
 
@@ -81,10 +135,33 @@ let oscLineWidth = 2.5;
 let oscGlowIntensity = 0.6;
 let orbiterCount = 8;
 let ringSpeed = 1.5;
+let vuSegments = 40;
+let vuGap = 3;
+let waterfallSpeed = 4;
+let ribbonThickness = 3.5;
+let ribbonGlow = 0.7;
+let particleCount = 60;
+let particleSpeed = 1.0;
+
+// Stereo Analyser state objects
+let analyserL = null;
+let analyserR = null;
+let dataArrayL = null;
+let dataArrayR = null;
+let waveArrayL = null;
+let waveArrayR = null;
+
+// VU meter peak-hold states
+let peakHoldL = 0;
+let peakHoldR = 0;
+let peakHoldTimeL = 0;
+let peakHoldTimeR = 0;
 
 // Precomputed mapping lookup tables
 let barBinMappings = [];
 let eqBinMappings = [];
+let waterfallBinMappings = [];
+let toastTimeout = null;
 
 // Interpolate frequency data at a fractional bin index
 function getInterpolatedBinValue(fractionalBin) {
@@ -118,41 +195,39 @@ function getMappedValue(mapping) {
     }
 }
 
-// Precompute logarithmic bin mappings for bars and eqColumns
-function precomputeMappings() {
-    barBinMappings = [];
-    eqBinMappings = [];
-    
+// Helper to build logarithmic frequency bin mappings
+function buildMapping(targetCount) {
     const sampleRate = (audioCtx && audioCtx.sampleRate) ? audioCtx.sampleRate : 48000;
     const binCount = fftSizeValue / 2;
+    const mappings = [];
+    const minFreq = 20; // Hz
+    const maxFreq = 16000; // Hz
     
-    const buildMapping = (targetCount) => {
-        const mappings = [];
-        const minFreq = 20; // Hz
-        const maxFreq = 16000; // Hz
+    for (let i = 0; i < targetCount; i++) {
+        const fStart = minFreq * Math.pow(maxFreq / minFreq, i / targetCount);
+        const fEnd = minFreq * Math.pow(maxFreq / minFreq, (i + 1) / targetCount);
         
-        for (let i = 0; i < targetCount; i++) {
-            const fStart = minFreq * Math.pow(maxFreq / minFreq, i / targetCount);
-            const fEnd = minFreq * Math.pow(maxFreq / minFreq, (i + 1) / targetCount);
-            
-            const binStart = (fStart * fftSizeValue) / sampleRate;
-            const binEnd = (fEnd * fftSizeValue) / sampleRate;
-            
-            mappings.push({
-                start: Math.max(0, binStart),
-                end: Math.min(binCount - 1, binEnd)
-            });
-        }
-        return mappings;
-    };
-    
+        const binStart = (fStart * fftSizeValue) / sampleRate;
+        const binEnd = (fEnd * fftSizeValue) / sampleRate;
+        
+        mappings.push({
+            start: Math.max(0, binStart),
+            end: Math.min(binCount - 1, binEnd)
+        });
+    }
+    return mappings;
+}
+
+// Precompute logarithmic bin mappings for bars and eqColumns
+function precomputeMappings() {
     barBinMappings = buildMapping(barsCount);
     eqBinMappings = buildMapping(eqColumns);
+    waterfallBinMappings = buildMapping(128);
 }
 
 let isSuppressingEvents = false;
 const varSetters = {
-    theme: v => { currentTheme = v; },
+    theme: v => { currentTheme = v; if (typeof updateNowPlayingThemeColors === 'function') updateNowPlayingThemeColors(); },
     sensitivity: v => { sensitivityMultiplier = v; },
     smoothing: v => { smoothingValue = v; },
     resolution: v => { fftSizeValue = v; },
@@ -167,7 +242,14 @@ const varSetters = {
     lineWidth: v => { oscLineWidth = v; },
     glowIntensity: v => { oscGlowIntensity = v; },
     orbiters: v => { orbiterCount = v; },
-    ringSpeed: v => { ringSpeed = v; }
+    ringSpeed: v => { ringSpeed = v; },
+    vuSegments: v => { vuSegments = v; },
+    vuGap: v => { vuGap = v; },
+    waterfallSpeed: v => { waterfallSpeed = v; },
+    ribbonThickness: v => { ribbonThickness = v; },
+    ribbonGlow: v => { ribbonGlow = v; },
+    particleCount: v => { particleCount = v; },
+    particleSpeed: v => { particleSpeed = v; }
 };
 
 // State objects
@@ -187,6 +269,8 @@ let hue = 200;
 let energy = 0;
 let isBeat = false;
 let bass = 0;
+let smoothBassAmp = 0;
+let lpVal = 0;
 
 // Constants for reactiveness
 const SMOOTH = 0.7;
@@ -259,9 +343,15 @@ function getBaseHue() {
 
 // Fit canvas to window size using fixed height param to avoid vertical squashing
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
     const heightParam = parseInt(urlParams.get('height') || '45');
-    canvas.height = heightParam;
+    if (currentPosition === 'left' || currentPosition === 'right' || currentPosition === 'fullscreen') {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else {
+        canvas.width = window.innerWidth;
+        canvas.height = heightParam;
+    }
+    canvas.style.background = currentPosition === 'fullscreen' ? 'transparent' : 'black';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -275,6 +365,33 @@ function drawBars(width, height) {
         precomputeMappings();
     }
     const bars = barsCount;
+    const step = Math.ceil(dataArray.length / bars);
+
+    if (isVertical) {
+        const barHeight = height / bars;
+        for (let i = 0; i < bars; i++) {
+            const mapping = barBinMappings[i] || { start: i * step, end: (i + 1) * step };
+            let sum = 0;
+            let count = 0;
+            for (let j = mapping.start; j <= mapping.end; j++) {
+                sum += dataArray[j] || 0;
+                count++;
+            }
+            const average = count > 0 ? sum / count : 0;
+            const val = (average / 255.0) * sensitivityMultiplier;
+            const maxBarWidth = visThickness;
+            const currentBarWidth = Math.min(maxBarWidth, val * maxBarWidth);
+
+            const y = i * barHeight;
+            const x = isLeft ? 0 : width - currentBarWidth;
+
+            // Draw bar
+            ctx.fillStyle = getThemeColor(i / bars, 0.5, 1.0);
+            ctx.fillRect(x, y + barGap / 2, currentBarWidth, barHeight - barGap);
+        }
+        return;
+    }
+
     const barWidth = width / bars;
     const gap = barGap;
 
@@ -315,29 +432,64 @@ function drawEqualizer(width, height) {
     if (!eqBinMappings || eqBinMappings.length !== eqColumns) {
         precomputeMappings();
     }
-    const bars = eqColumns;
-    const barWidth = width / bars;
+    const columns = eqColumns;
+    const step = Math.ceil(dataArray.length / columns);
+
+    if (isVertical) {
+        const barHeight = height / columns;
+        const totalSegments = 10;
+        const segWidth = (visThickness - (totalSegments - 1) * segGap) / totalSegments;
+
+        for (let i = 0; i < columns; i++) {
+            const mapping = eqBinMappings[i] || { start: i * step, end: (i + 1) * step };
+            let sum = 0;
+            let count = 0;
+            for (let j = mapping.start; j <= mapping.end; j++) {
+                sum += dataArray[j] || 0;
+                count++;
+            }
+            const average = count > 0 ? sum / count : 0;
+            const level = Math.min(1.0, (average / 255.0) * sensitivityMultiplier);
+            const litCount = Math.round(level * totalSegments);
+
+            const y = i * barHeight;
+            const xStart = isLeft ? 0 : width - visThickness;
+
+            for (let s = 0; s < totalSegments; s++) {
+                const isLit = s < litCount;
+                const ratio = s / totalSegments;
+                const x = xStart + s * (segWidth + segGap);
+
+                let color = getThemeColor(ratio, ratio, isLit ? 1.0 : 0.05);
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y + segGap / 2, segWidth, barHeight - segGap);
+            }
+        }
+        return;
+    }
+
+    const colWidth = width / columns;
     const gap = 3;
     const segmentHeight = segHeight;
     const segmentGap = segGap;
     const totalSegments = Math.max(2, Math.floor(height / (segmentHeight + segmentGap)));
 
     let frameMax = 0;
-    for (let i = 0; i < bars; i++) {
+    for (let i = 0; i < columns; i++) {
         const mapping = eqBinMappings[i];
         const val = mapping ? getMappedValue(mapping) : 0;
         if (val > frameMax) frameMax = val;
     }
     updatePeak(frameMax);
 
-    for (let i = 0; i < bars; i++) {
+    for (let i = 0; i < columns; i++) {
         const mapping = eqBinMappings[i];
         const rawValue = mapping ? getMappedValue(mapping) : 0;
         const value = Math.min(1.0, (rawValue / (peakLevel * 1.0)) * sensitivityMultiplier);
         const litSegments = Math.floor(value * totalSegments);
 
-        const x = i * barWidth + gap / 2;
-        const w = barWidth - gap;
+        const x = i * colWidth + gap / 2;
+        const w = colWidth - gap;
 
         for (let s = 0; s < totalSegments; s++) {
             const y = height - (s + 1) * (segmentHeight + segmentGap);
@@ -375,10 +527,10 @@ function drawEqualizer(width, height) {
                         ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
                     }
                 } else {
-                    ctx.fillStyle = getThemeColor(i / bars, segRatio, brightness);
+                    ctx.fillStyle = getThemeColor(i / columns, segRatio, brightness);
                     ctx.fillRect(x, y, w, segmentHeight);
                     if (s === litSegments - 1 && segRatio > 0.6) {
-                        ctx.fillStyle = getThemeColor(i / bars, segRatio, 0.3);
+                        ctx.fillStyle = getThemeColor(i / columns, segRatio, 0.3);
                         ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
                     }
                 }
@@ -392,7 +544,31 @@ function drawEqualizer(width, height) {
 
 // ─── Style 3: Oscilloscope (Waveform) ──────────────
 function drawOscilloscope(width, height) {
-    const mid = height / 2;
+    if (isVertical) {
+        ctx.beginPath();
+        ctx.lineWidth = oscLineWidth;
+        ctx.strokeStyle = getThemeColor(0.5, 0.5, 1.0);
+        
+        const cx = isLeft ? visThickness / 2 : width - visThickness / 2;
+        const step = height / waveArray.length;
+        
+        for (let i = 0; i < waveArray.length; i++) {
+            const val = (waveArray[i] - 128) / 128.0; // range -1.0 to 1.0
+            const displacement = val * (visThickness / 2) * sensitivityMultiplier;
+            const x = cx + displacement;
+            const y = i * step;
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+        return;
+    }
+
+    ctx.beginPath(); mid = height / 2;
 
     // AGC Peak Search for Waveform
     let waveMax = 0;
@@ -549,6 +725,373 @@ function drawNeuralPulse(width, height) {
     }
 }
 
+// ─── Style 5: Stereo VU Meter ──────────────────────
+// Helper to draw a single VU segment with color & glow
+function drawVUSegment(x, y, w, h, ratio, isLit, isPeak) {
+    let color;
+    let alpha = isLit ? 1.0 : 0.15;
+
+    if (currentTheme === 'cyberpunk') {
+        if (ratio < 0.6) {
+            color = `rgba(0, 255, 102, ${alpha})`;
+        } else if (ratio < 0.8) {
+            color = `rgba(255, 204, 0, ${alpha})`;
+        } else {
+            color = `rgba(255, 51, 0, ${alpha})`;
+        }
+    } else {
+        color = getThemeColor(ratio, ratio, alpha);
+    }
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+
+    if ((isLit && ratio >= 0.8 && currentTheme === 'cyberpunk') || isPeak) {
+        let glowColor = color;
+        if (isPeak) {
+            if (currentTheme === 'cyberpunk') {
+                if (ratio < 0.6) glowColor = "rgba(0, 255, 102, 1.0)";
+                else if (ratio < 0.8) glowColor = "rgba(255, 204, 0, 1.0)";
+                else glowColor = "rgba(255, 51, 0, 1.0)";
+            } else {
+                glowColor = getThemeColor(ratio, 1.0, 1.0);
+            }
+            ctx.fillStyle = glowColor;
+            ctx.fillRect(x, y, w, h);
+        }
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = glowColor;
+        ctx.fillRect(x, y, w, h);
+        ctx.shadowBlur = 0;
+    }
+}
+
+// ─── Style 5: Stereo VU Meter ──────────────────────
+function drawVUMeters(width, height) {
+    if (isVertical) {
+        const xStartL = isLeft ? 4 : width - visThickness + 4;
+        const xStartR = isLeft ? 24 : width - visThickness + 24;
+        const barWidth = 16;
+        const startY = height - 10;
+        const endY = 25;
+        const meterHeight = startY - endY;
+
+        // Draw indicators
+        ctx.font = "bold 9px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+
+        ctx.fillStyle = getThemeColor(0, 0.5, 0.7);
+        ctx.fillText("L", xStartL + barWidth / 2, endY - 4);
+        ctx.fillStyle = getThemeColor(1, 0.5, 0.7);
+        ctx.fillText("R", xStartR + barWidth / 2, endY - 4);
+
+        let maxL = 0;
+        let maxR = 0;
+
+        if (waveArrayL && waveArrayR) {
+            for (let i = 0; i < waveArrayL.length; i++) {
+                const valL = Math.abs(waveArrayL[i] - 128) / 128;
+                if (valL > maxL) maxL = valL;
+                const valR = Math.abs(waveArrayR[i] - 128) / 128;
+                if (valR > maxR) maxR = valR;
+            }
+        }
+
+        const levelL = Math.min(1.0, maxL * sensitivityMultiplier);
+        const levelR = Math.min(1.0, maxR * sensitivityMultiplier);
+        const now = performance.now();
+
+        // Update peak hold for Left
+        if (levelL >= peakHoldL) {
+            peakHoldL = levelL;
+            peakHoldTimeL = now;
+        } else if (now - peakHoldTimeL > 500) {
+            peakHoldL -= 0.015;
+            if (peakHoldL < 0) peakHoldL = 0;
+        }
+
+        // Update peak hold for Right
+        if (levelR >= peakHoldR) {
+            peakHoldR = levelR;
+            peakHoldTimeR = now;
+        } else if (now - peakHoldTimeR > 500) {
+            peakHoldR -= 0.015;
+            if (peakHoldR < 0) peakHoldR = 0;
+        }
+
+        const segHeight = (meterHeight - (vuSegments - 1) * vuGap) / vuSegments;
+
+        const drawVerticalChannel = (level, peakHold, x) => {
+            const litCount = Math.round(level * vuSegments);
+            const peakIndex = Math.min(vuSegments - 1, Math.floor(peakHold * vuSegments));
+
+            for (let s = 0; s < vuSegments; s++) {
+                const ratio = s / vuSegments;
+                const isLit = s < litCount;
+                const isPeak = s === peakIndex;
+                const y = startY - s * (segHeight + vuGap) - segHeight;
+                drawVUSegment(x, y, barWidth, segHeight, ratio, isLit, isPeak);
+            }
+        };
+
+        drawVerticalChannel(levelL, peakHoldL, xStartL);
+        drawVerticalChannel(levelR, peakHoldR, xStartR);
+        return;
+    }
+
+    const yL = 4;
+    const barHeight = (height - 12) / 2;
+    const yR = 4 + barHeight + 4;
+    const startX = 25;
+    const endX = width - 10;
+    const meterWidth = endX - startX;
+
+    // Draw indicators L and R
+    ctx.font = "bold 9px 'Inter', sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    // Draw L
+    ctx.fillStyle = getThemeColor(0, 0.5, 0.7);
+    ctx.fillText("L", 8, yL + barHeight / 2);
+
+    // Draw R
+    ctx.fillStyle = getThemeColor(1, 0.5, 0.7);
+    ctx.fillText("R", 8, yR + barHeight / 2);
+
+    let maxL = 0;
+    let maxR = 0;
+
+    if (waveArrayL && waveArrayR) {
+        for (let i = 0; i < waveArrayL.length; i++) {
+            const valL = Math.abs(waveArrayL[i] - 128) / 128;
+            if (valL > maxL) maxL = valL;
+            const valR = Math.abs(waveArrayR[i] - 128) / 128;
+            if (valR > maxR) maxR = valR;
+        }
+    }
+
+    const levelL = Math.min(1.0, maxL * sensitivityMultiplier);
+    const levelR = Math.min(1.0, maxR * sensitivityMultiplier);
+
+    const now = performance.now();
+
+    // Update peak hold for Left
+    if (levelL >= peakHoldL) {
+        peakHoldL = levelL;
+        peakHoldTimeL = now;
+    } else if (now - peakHoldTimeL > 500) {
+        peakHoldL -= 0.015;
+        if (peakHoldL < 0) peakHoldL = 0;
+    }
+
+    // Update peak hold for Right
+    if (levelR >= peakHoldR) {
+        peakHoldR = levelR;
+        peakHoldTimeR = now;
+    } else if (now - peakHoldTimeR > 500) {
+        peakHoldR -= 0.015;
+        if (peakHoldR < 0) peakHoldR = 0;
+    }
+
+    const segWidth = (meterWidth - (vuSegments - 1) * vuGap) / vuSegments;
+
+    const drawChannel = (level, peakHold, y) => {
+        const litCount = Math.round(level * vuSegments);
+        const peakIndex = Math.min(vuSegments - 1, Math.floor(peakHold * vuSegments));
+
+        for (let s = 0; s < vuSegments; s++) {
+            const ratio = s / vuSegments;
+            const isLit = s < litCount;
+            const isPeak = s === peakIndex;
+            const x = startX + s * (segWidth + vuGap);
+            drawVUSegment(x, y, segWidth, barHeight, ratio, isLit, isPeak);
+        }
+    };
+
+    drawChannel(levelL, peakHoldL, yL);
+    drawChannel(levelR, peakHoldR, yR);
+}
+
+// ─── Style 6: Sidebar Waterfall ────────────────────
+let waterfallCanvas = null;
+let waterfallCtx = null;
+
+function drawWaterfall(width, height) {
+    if (!waterfallCanvas || waterfallCanvas.width !== width || waterfallCanvas.height !== height) {
+        waterfallCanvas = document.createElement('canvas');
+        waterfallCanvas.width = width;
+        waterfallCanvas.height = height;
+        waterfallCtx = waterfallCanvas.getContext('2d');
+        waterfallCtx.fillStyle = '#000000';
+        waterfallCtx.fillRect(0, 0, width, height);
+    }
+
+    const speed = waterfallSpeed;
+    const bandsCount = 128;
+
+    // Enforce precomputed mapping layout initialization
+    if (!waterfallBinMappings || waterfallBinMappings.length !== bandsCount) {
+        precomputeMappings();
+    }
+
+    if (isVertical) {
+        if (isLeft) {
+            waterfallCtx.drawImage(waterfallCanvas, 0, 0, width - speed, height, speed, 0, width - speed, height);
+            const step = height / bandsCount;
+            for (let i = 0; i < bandsCount; i++) {
+                const mapping = waterfallBinMappings[i];
+                const rawVal = mapping ? getMappedValue(mapping) : 0;
+                const val = Math.min(1.0, (rawVal / 255) * sensitivityMultiplier);
+                waterfallCtx.fillStyle = getThemeColor(i / bandsCount, val, 1.0);
+                waterfallCtx.fillRect(0, i * step, speed, Math.ceil(step));
+            }
+        } else {
+            waterfallCtx.drawImage(waterfallCanvas, speed, 0, width - speed, height, 0, 0, width - speed, height);
+            const step = height / bandsCount;
+            for (let i = 0; i < bandsCount; i++) {
+                const mapping = waterfallBinMappings[i];
+                const rawVal = mapping ? getMappedValue(mapping) : 0;
+                const val = Math.min(1.0, (rawVal / 255) * sensitivityMultiplier);
+                waterfallCtx.fillStyle = getThemeColor(i / bandsCount, val, 1.0);
+                waterfallCtx.fillRect(width - speed, i * step, speed, Math.ceil(step));
+            }
+        }
+    } else {
+        waterfallCtx.drawImage(waterfallCanvas, 0, speed, width, height - speed, 0, 0, width, height - speed);
+        const step = width / bandsCount;
+        for (let i = 0; i < bandsCount; i++) {
+            const mapping = waterfallBinMappings[i];
+            const rawVal = mapping ? getMappedValue(mapping) : 0;
+            const val = Math.min(1.0, (rawVal / 255) * sensitivityMultiplier);
+            waterfallCtx.fillStyle = getThemeColor(i / bandsCount, val, 1.0);
+            waterfallCtx.fillRect(i * step, height - speed, Math.ceil(step), speed);
+        }
+    }
+
+    ctx.drawImage(waterfallCanvas, 0, 0);
+}
+
+// ─── Style 7: Neon Ribbon ──────────────────────────
+function drawRibbon(width, height) {
+    ctx.save();
+    ctx.lineWidth = ribbonThickness;
+    ctx.shadowBlur = (10 + energy * 15) * ribbonGlow;
+
+    if (isVertical) {
+        const cx = isLeft ? visThickness / 2 : width - visThickness / 2;
+        const step = height / waveArray.length;
+        const points = [];
+
+        ctx.beginPath();
+        for (let i = 0; i < waveArray.length; i++) {
+            const val = (waveArray[i] - 128) / 128.0;
+            const displacement = val * (visThickness / 2) * sensitivityMultiplier;
+            const x1 = cx - Math.abs(displacement);
+            const x2 = cx + Math.abs(displacement);
+            const y = i * step;
+            points.push({ x1, x2, y });
+        }
+
+        ctx.moveTo(points[0].x1, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x1, points[i].y);
+        }
+        for (let i = points.length - 1; i >= 0; i--) {
+            ctx.lineTo(points[i].x2, points[i].y);
+        }
+        ctx.closePath();
+
+        const grad = ctx.createLinearGradient(cx - visThickness/2, 0, cx + visThickness/2, 0);
+        grad.addColorStop(0, getThemeColor(0, 0.8, 0.1));
+        grad.addColorStop(0.5, getThemeColor(0.5, 0.5, 0.8));
+        grad.addColorStop(1, getThemeColor(1.0, 0.8, 0.1));
+
+        ctx.fillStyle = grad;
+        ctx.shadowColor = getThemeColor(0.5, 1.0, 1.0);
+        ctx.fill();
+    } else {
+        const cy = height / 2;
+        const step = width / waveArray.length;
+        const points = [];
+
+        ctx.beginPath();
+        for (let i = 0; i < waveArray.length; i++) {
+            const val = (waveArray[i] - 128) / 128.0;
+            const displacement = val * (height / 2) * sensitivityMultiplier;
+            const y1 = cy - Math.abs(displacement);
+            const y2 = cy + Math.abs(displacement);
+            const x = i * step;
+            points.push({ x, y1, y2 });
+        }
+
+        ctx.moveTo(points[0].x, points[0].y1);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y1);
+        }
+        for (let i = points.length - 1; i >= 0; i--) {
+            ctx.lineTo(points[i].x, points[i].y2);
+        }
+        ctx.closePath();
+
+        const grad = ctx.createLinearGradient(0, cy - height/2, 0, cy + height/2);
+        grad.addColorStop(0, getThemeColor(0, 0.8, 0.1));
+        grad.addColorStop(0.5, getThemeColor(0.5, 0.5, 0.8));
+        grad.addColorStop(1, getThemeColor(1.0, 0.8, 0.1));
+
+        ctx.fillStyle = grad;
+        ctx.shadowColor = getThemeColor(0.5, 1.0, 1.0);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ─── Style 8: Ambient Particles ────────────────────
+let particlesArray = [];
+
+function drawParticles(width, height) {
+    const count = particleCount;
+    if (particlesArray.length !== count) {
+        particlesArray = [];
+        for (let i = 0; i < count; i++) {
+            particlesArray.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * particleSpeed,
+                vy: (Math.random() - 0.5) * particleSpeed,
+                size: Math.random() * 3 + 1,
+                hueOffset: Math.random()
+            });
+        }
+    }
+
+    const speedFactor = 1.0 + (energy * 5.0);
+    const sizeFactor = 1.0 + (bass * 3.0);
+
+    for (let i = 0; i < particlesArray.length; i++) {
+        const p = particlesArray[i];
+        p.x += p.vx * speedFactor;
+        p.y += p.vy * (1.0 + bass * 2.0);
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        const pSize = p.size * sizeFactor;
+        const color = getThemeColor(p.hueOffset, 0.8, 0.8);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, pSize, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = pSize * 2;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
 // ─── Reactive Calculations ─────────────────────────
 function updateReactiveState() {
     if (!dataArray || dataArray.length === 0) return;
@@ -593,13 +1136,27 @@ function updateReactiveState() {
     const rawEnergy = Math.sqrt(total / len);
     smoothEnergy = smoothEnergy * SMOOTH + rawEnergy * (1 - SMOOTH);
 
-    // Beat detection
-    const now = performance.now();
-    const energyDelta = rawBass - prevEnergy;
-    prevEnergy = rawBass;
+    // Unsmoothed low-pass envelope beat detector from raw waveform samples
+    let bassAmpSum = 0;
+    const waveLen = waveArray ? waveArray.length : 0;
+    if (waveLen > 0) {
+        for (let i = 0; i < waveLen; i++) {
+            const sample = (waveArray[i] - 128) / 128;
+            // First-order IIR low pass filter (alpha = 0.05 for cut-off around 150Hz at 48kHz)
+            lpVal += (sample - lpVal) * 0.05;
+            bassAmpSum += Math.abs(lpVal);
+        }
+    }
+    const instBassAmp = waveLen > 0 ? (bassAmpSum / waveLen) : 0;
 
+    // Smooth long-term average of the bass waveform envelope
+    smoothBassAmp = smoothBassAmp * 0.95 + instBassAmp * 0.05;
+
+    // Beat transient detection: check if instantaneous low-pass envelope spikes above the dynamic average
     isBeat = false;
-    if (energyDelta > beatThresholdValue && (now - lastBeat) > BEAT_COOLDOWN_MS) {
+    const now = performance.now();
+    const threshold = beatThresholdValue * 0.15;
+    if ((instBassAmp - smoothBassAmp) > threshold && (now - lastBeat) > BEAT_COOLDOWN_MS) {
         isBeat = true;
         lastBeat = now;
     }
@@ -627,6 +1184,14 @@ function render() {
     if (analyser) {
         analyser.getByteFrequencyData(dataArray);
         analyser.getByteTimeDomainData(waveArray);
+
+        if (analyserL && analyserR && dataArrayL && dataArrayR && waveArrayL && waveArrayR) {
+            analyserL.getByteFrequencyData(dataArrayL);
+            analyserL.getByteTimeDomainData(waveArrayL);
+            analyserR.getByteFrequencyData(dataArrayR);
+            analyserR.getByteTimeDomainData(waveArrayR);
+        }
+
         updateReactiveState();
     }
 
@@ -644,6 +1209,18 @@ function render() {
         case 'pulse':
         case 'neural':
             drawNeuralPulse(w, h);
+            break;
+        case 'vu':
+            drawVUMeters(w, h);
+            break;
+        case 'waterfall':
+            drawWaterfall(w, h);
+            break;
+        case 'ribbon':
+            drawRibbon(w, h);
+            break;
+        case 'particles':
+            drawParticles(w, h);
             break;
         default:
             drawBars(w, h);
@@ -695,14 +1272,46 @@ function initAudio() {
         .then(stream => {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioCtx.createMediaStreamSource(stream);
+            
+            // Create main analyser
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = fftSizeValue;
             analyser.smoothingTimeConstant = smoothingValue;
-            analyser.minDecibels = minDecibelsValue;
+            analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
+            
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
             waveArray = new Uint8Array(bufferLength);
             source.connect(analyser);
+
+            // Create Left and Right analysers
+            analyserL = audioCtx.createAnalyser();
+            analyserR = audioCtx.createAnalyser();
+            analyserL.fftSize = fftSizeValue;
+            analyserL.smoothingTimeConstant = smoothingValue;
+            analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
+            analyserR.fftSize = fftSizeValue;
+            analyserR.smoothingTimeConstant = smoothingValue;
+            analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
+
+            dataArrayL = new Uint8Array(bufferLength);
+            waveArrayL = new Uint8Array(bufferLength);
+            dataArrayR = new Uint8Array(bufferLength);
+            waveArrayR = new Uint8Array(bufferLength);
+
+            const splitter = audioCtx.createChannelSplitter(2);
+            source.connect(splitter);
+            splitter.connect(analyserL, 0);
+
+            // Fallback to channel 0 if mono input
+            const trackSettings = stream.getAudioTracks()[0]?.getSettings();
+            const channelCount = trackSettings?.channelCount || source.channelCount;
+            if (channelCount >= 2) {
+                splitter.connect(analyserR, 1);
+            } else {
+                splitter.connect(analyserR, 0);
+            }
+
             precomputeMappings();
             render();
         })
@@ -756,12 +1365,27 @@ function applyStyleSettings() {
         if (analyser) {
             analyser.fftSize = fftSizeValue;
             analyser.smoothingTimeConstant = smoothingValue;
-            analyser.minDecibels = minDecibelsValue;
+            analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
+            
+            if (analyserL && analyserR) {
+                analyserL.fftSize = fftSizeValue;
+                analyserL.smoothingTimeConstant = smoothingValue;
+                analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
+                analyserR.fftSize = fftSizeValue;
+                analyserR.smoothingTimeConstant = smoothingValue;
+                analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
+            }
+
             // If fftSize changed, resize the buffers
             const bufferLength = analyser.frequencyBinCount;
             if (!dataArray || dataArray.length !== bufferLength) {
                 dataArray = new Uint8Array(bufferLength);
                 waveArray = new Uint8Array(bufferLength);
+                
+                dataArrayL = new Uint8Array(bufferLength);
+                waveArrayL = new Uint8Array(bufferLength);
+                dataArrayR = new Uint8Array(bufferLength);
+                waveArrayR = new Uint8Array(bufferLength);
             }
         }
 
@@ -786,6 +1410,13 @@ function applyStyleSettings() {
         updateVal('glowSlider', oscGlowIntensity);
         updateVal('orbitersSlider', orbiterCount);
         updateVal('ringSpeedSlider', ringSpeed);
+        updateVal('vuSegmentsSlider', vuSegments);
+        updateVal('vuGapSlider', vuGap);
+        updateVal('waterfallSpeedSlider', waterfallSpeed);
+        updateVal('ribbonThicknessSlider', ribbonThickness);
+        updateVal('ribbonGlowSlider', ribbonGlow);
+        updateVal('particleCountSlider', particleCount);
+        updateVal('particleSpeedSlider', particleSpeed);
 
         precomputeMappings();
     } finally {
@@ -819,6 +1450,18 @@ function updateControlsVisibility() {
     } else if (currentStyle === 'pulse' || currentStyle === 'neural') {
         const el = document.querySelector('.pulse-setting');
         if (el) el.style.display = 'block';
+    } else if (currentStyle === 'vu') {
+        const el = document.querySelector('.vu-setting');
+        if (el) el.style.display = 'block';
+    } else if (currentStyle === 'waterfall') {
+        const el = document.querySelector('.waterfall-setting');
+        if (el) el.style.display = 'block';
+    } else if (currentStyle === 'ribbon') {
+        const el = document.querySelector('.ribbon-setting');
+        if (el) el.style.display = 'block';
+    } else if (currentStyle === 'particles') {
+        const el = document.querySelector('.particles-setting');
+        if (el) el.style.display = 'block';
     }
 
     // Apply exact settings mapping for the active style
@@ -839,6 +1482,10 @@ function toggleMenu(forceState) {
     menuEl.style.bottom = `${heightParam + 5}px`;
     menuEl.style.display = menuOpen ? 'block' : 'none';
     
+    if (!menuOpen && typeof toggleHelp === 'function') {
+        toggleHelp(false);
+    }
+
     const menuHeight = menuEl.offsetHeight || 250;
     
     // Notify python wrapper of the state change to resize window and adjust input shape
@@ -900,6 +1547,9 @@ window.addEventListener('load', () => {
             currentStyle = e.target.value;
             localStorage.setItem('visualizer-style', currentStyle);
             updateControlsVisibility();
+            if (typeof showToast === 'function') {
+                showToast(`Style: ${getStyleName(currentStyle)}`);
+            }
         });
     }
     updateControlsVisibility();
@@ -908,17 +1558,37 @@ window.addEventListener('load', () => {
     const inputs = [
         { id: 'themeSelect', key: 'theme', type: 'change', parse: v => v },
         { id: 'gainSlider', key: 'sensitivity', type: 'input', parse: parseFloat },
-        { id: 'smoothingSlider', key: 'smoothing', type: 'input', parse: parseFloat, cb: v => { if (analyser) analyser.smoothingTimeConstant = v; } },
+        { id: 'smoothingSlider', key: 'smoothing', type: 'input', parse: parseFloat, cb: v => {
+            if (analyser) analyser.smoothingTimeConstant = v;
+            if (analyserL && analyserR) {
+                analyserL.smoothingTimeConstant = v;
+                analyserR.smoothingTimeConstant = v;
+            }
+        } },
         { id: 'scanlinesSlider', key: 'scanlines', type: 'input', parse: parseFloat, cb: v => document.body.style.setProperty('--scanlines-opacity', v) },
         { id: 'fftSelect', key: 'resolution', type: 'change', parse: parseInt, cb: v => {
             if (analyser && analyser.fftSize !== v) {
                 analyser.fftSize = v;
+                if (analyserL && analyserR) {
+                    analyserL.fftSize = v;
+                    analyserR.fftSize = v;
+                }
                 const bufferLength = analyser.frequencyBinCount;
                 dataArray = new Uint8Array(bufferLength);
                 waveArray = new Uint8Array(bufferLength);
+                dataArrayL = new Uint8Array(bufferLength);
+                waveArrayL = new Uint8Array(bufferLength);
+                dataArrayR = new Uint8Array(bufferLength);
+                waveArrayR = new Uint8Array(bufferLength);
             }
         }},
-        { id: 'dbSlider', key: 'minDb', type: 'input', parse: parseFloat, cb: v => { if (analyser) analyser.minDecibels = v; } },
+        { id: 'dbSlider', key: 'minDb', type: 'input', parse: parseFloat, cb: v => {
+            if (analyser) analyser.minDecibels = Math.min(analyser.maxDecibels - 1, v);
+            if (analyserL && analyserR) {
+                analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, v);
+                analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, v);
+            }
+        } },
         { id: 'beatSlider', key: 'beatSense', type: 'input', parse: parseFloat },
         // Style-specific inputs
         { id: 'barsSlider', key: 'barsCount', type: 'input', parse: parseInt, style: 'bars' },
@@ -930,7 +1600,14 @@ window.addEventListener('load', () => {
         { id: 'lineWidthSlider', key: 'lineWidth', type: 'input', parse: parseFloat, style: 'wave' },
         { id: 'glowSlider', key: 'glowIntensity', type: 'input', parse: parseFloat, style: 'wave' },
         { id: 'orbitersSlider', key: 'orbiters', type: 'input', parse: parseInt, style: 'pulse' },
-        { id: 'ringSpeedSlider', key: 'ringSpeed', type: 'input', parse: parseFloat, style: 'pulse' }
+        { id: 'ringSpeedSlider', key: 'ringSpeed', type: 'input', parse: parseFloat, style: 'pulse' },
+        { id: 'vuSegmentsSlider', key: 'vuSegments', type: 'input', parse: parseInt, style: 'vu' },
+        { id: 'vuGapSlider', key: 'vuGap', type: 'input', parse: parseInt, style: 'vu' },
+        { id: 'waterfallSpeedSlider', key: 'waterfallSpeed', type: 'input', parse: parseInt, style: 'waterfall' },
+        { id: 'ribbonThicknessSlider', key: 'ribbonThickness', type: 'input', parse: parseFloat, style: 'ribbon' },
+        { id: 'ribbonGlowSlider', key: 'ribbonGlow', type: 'input', parse: parseFloat, style: 'ribbon' },
+        { id: 'particleCountSlider', key: 'particleCount', type: 'input', parse: parseInt, style: 'particles' },
+        { id: 'particleSpeedSlider', key: 'particleSpeed', type: 'input', parse: parseFloat, style: 'particles' }
     ];
 
     inputs.forEach(item => {
@@ -950,6 +1627,9 @@ window.addEventListener('load', () => {
                 if (item.cb) item.cb(val);
                 if (item.key === 'barsCount' || item.key === 'eqColumns' || item.key === 'resolution') {
                     precomputeMappings();
+                }
+                if (item.key === 'theme' && typeof showToast === 'function') {
+                    showToast(`Theme: ${getThemeName(val)}`);
                 }
                 saveAllSettings();
             });
@@ -980,4 +1660,248 @@ window.addEventListener('load', () => {
             toggleMenu(false);
         }
     });
+
+    // Position menu and trigger based on current edge layout
+    const menuEl = document.getElementById('controlsMenu');
+    const triggerEl = document.getElementById('controlsTrigger');
+    if (menuEl) {
+        if (currentPosition === 'top') {
+            menuEl.style.top = `${visThickness + 10}px`;
+            menuEl.style.bottom = 'auto';
+        } else if (currentPosition === 'left') {
+            menuEl.style.left = '10px';
+            menuEl.style.right = 'auto';
+            menuEl.style.bottom = `${visThickness + 10}px`;
+            menuEl.style.top = 'auto';
+            if (triggerEl) {
+                triggerEl.style.left = `${visThickness - 40}px`;
+                triggerEl.style.right = 'auto';
+            }
+        } else if (currentPosition === 'right') {
+            menuEl.style.right = '10px';
+            menuEl.style.left = 'auto';
+            menuEl.style.bottom = `${visThickness + 10}px`;
+            menuEl.style.top = 'auto';
+        } else if (currentPosition === 'fullscreen') {
+            menuEl.style.right = '10px';
+            menuEl.style.bottom = '60px';
+        }
+    }
+
+    // Help card toggle logic
+    const settingsContent = document.getElementById('settingsContent');
+    const shortcutsCard = document.getElementById('shortcutsCard');
+    const helpTrigger = document.getElementById('helpTrigger');
+    const backToSettings = document.getElementById('backToSettings');
+
+    toggleHelp = function(show) {
+        helpOpen = show;
+        if (!settingsContent || !shortcutsCard || !helpTrigger) return;
+        
+        if (helpOpen) {
+            settingsContent.style.display = 'none';
+            shortcutsCard.style.display = 'block';
+            helpTrigger.style.background = '#00f0ff';
+            helpTrigger.style.color = 'black';
+            if (!menuOpen) toggleMenu(true);
+        } else {
+            settingsContent.style.display = 'block';
+            shortcutsCard.style.display = 'none';
+            helpTrigger.style.background = 'rgba(255, 255, 255, 0.08)';
+            helpTrigger.style.color = 'rgba(255, 255, 255, 0.5)';
+        }
+    };
+
+    if (helpTrigger) {
+        helpTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleHelp(!helpOpen);
+        });
+    }
+
+    if (backToSettings) {
+        backToSettings.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleHelp(false);
+        });
+    }
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+        // 'm' key toggles menu
+        if (e.key === 'm' || e.key === 'M') {
+            toggleMenu(!menuOpen);
+        }
+        // 'Escape' key hides menu or help card
+        else if (e.key === 'Escape') {
+            if (helpOpen) {
+                toggleHelp(false);
+            } else {
+                toggleMenu(false);
+            }
+        }
+        // '?' or '/' toggles help card
+        else if (e.key === '?' || e.key === '/') {
+            e.preventDefault();
+            toggleHelp(!helpOpen);
+        }
+        // 's' key cycles style
+        else if (e.key === 's' || e.key === 'S') {
+            const styles = ['bars', 'eq', 'wave', 'pulse', 'vu', 'waterfall', 'ribbon', 'particles'];
+            let currentIndex = styles.indexOf(currentStyle);
+            let nextIndex = (e.key === 's') ? 
+                (currentIndex - 1 + styles.length) % styles.length : 
+                (currentIndex + 1) % styles.length;
+            const styleSelect = document.getElementById('styleSelect');
+            if (styleSelect) {
+                styleSelect.value = styles[nextIndex];
+                styleSelect.dispatchEvent(new Event('change'));
+            }
+        }
+        // 't' key cycles theme
+        else if (e.key === 't' || e.key === 'T') {
+            const themes = ['cyberpunk', 'matrix', 'neon', 'volcano', 'monochrome'];
+            let currentIndex = themes.indexOf(currentTheme);
+            let nextIndex = (e.key === 't') ? 
+                (currentIndex - 1 + themes.length) % themes.length : 
+                (currentIndex + 1) % themes.length;
+            const themeSelect = document.getElementById('themeSelect');
+            if (themeSelect) {
+                themeSelect.value = themes[nextIndex];
+                themeSelect.dispatchEvent(new Event('change'));
+            }
+        }
+        // ArrowUp / ArrowDown adjust sensitivity
+        else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const gainSlider = document.getElementById('gainSlider');
+            if (gainSlider) {
+                let newVal = Math.min(3.0, parseFloat(gainSlider.value) + 0.1);
+                gainSlider.value = newVal.toFixed(1);
+                gainSlider.dispatchEvent(new Event('input'));
+            }
+        }
+        else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const gainSlider = document.getElementById('gainSlider');
+            if (gainSlider) {
+                let newVal = Math.max(0.5, parseFloat(gainSlider.value) - 0.1);
+                gainSlider.value = newVal.toFixed(1);
+                gainSlider.dispatchEvent(new Event('input'));
+            }
+        }
+    });
 });
+
+// Toast Notification Helper Functions
+function getStyleName(style) {
+    const names = {
+        bars: "Classic Bars",
+        eq: "LED Equalizer",
+        wave: "Oscilloscope",
+        pulse: "Orbital Pulse",
+        vu: "Stereo VU Meter",
+        waterfall: "Sidebar Waterfall",
+        ribbon: "Neon Ribbon",
+        particles: "Ambient Particles"
+    };
+    return names[style] || style;
+}
+
+function getThemeName(theme) {
+    const names = {
+        cyberpunk: "Cyberpunk",
+        matrix: "Matrix",
+        neon: "Neon Glow",
+        volcano: "Volcano",
+        monochrome: "Monochrome"
+    };
+    return names[theme] || theme;
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toastNotification');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+    }, 1200);
+}
+
+// Now Playing Metadata Integration
+let currentMetadata = null;
+
+window.onMetadataUpdate = function(metadata) {
+    currentMetadata = metadata;
+    const card = document.getElementById('nowPlayingCard');
+    if (!card) return;
+
+    if (!metadata || !metadata.title || metadata.status === 'Stopped') {
+        card.classList.add('hidden');
+        return;
+    }
+    
+    card.classList.remove('hidden');
+    
+    // Update texts
+    document.getElementById('trackTitle').textContent = metadata.title;
+    document.getElementById('trackArtist').textContent = metadata.artist || 'Unknown Artist';
+    
+    // Update art
+    const artImg = document.getElementById('trackArt');
+    if (metadata.artUrl) {
+        artImg.src = metadata.artUrl;
+        artImg.style.display = 'block';
+    } else {
+        artImg.src = '';
+        artImg.style.display = 'none';
+    }
+    
+    // Update progress bar
+    const progress = document.getElementById('trackProgress');
+    if (metadata.length > 0) {
+        const pct = (metadata.position / metadata.length) * 100;
+        progress.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    } else {
+        progress.style.width = '0%';
+    }
+    
+    updateNowPlayingThemeColors();
+};
+
+function updateNowPlayingThemeColors() {
+    const card = document.getElementById('nowPlayingCard');
+    const title = document.getElementById('trackTitle');
+    const progress = document.getElementById('trackProgress');
+    if (!card || !title || !progress) return;
+    
+    let primaryColor = '#00f0ff';
+    
+    switch (currentTheme) {
+        case 'matrix':
+            primaryColor = '#00ff66';
+            break;
+        case 'neon':
+            primaryColor = '#ff007f';
+            break;
+        case 'volcano':
+            primaryColor = '#ff3300';
+            break;
+        case 'monochrome':
+            primaryColor = '#ffffff';
+            break;
+        case 'cyberpunk':
+        default:
+            primaryColor = '#00f0ff';
+            break;
+    }
+    
+    card.style.borderColor = `${primaryColor}66`;
+    card.style.boxShadow = `0 0 15px ${primaryColor}20, inset 0 0 10px ${primaryColor}0a`;
+    title.style.color = primaryColor;
+    progress.style.background = primaryColor;
+    progress.style.boxShadow = `0 0 8px ${primaryColor}`;
+}

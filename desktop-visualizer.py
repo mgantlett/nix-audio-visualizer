@@ -10,7 +10,7 @@ gi.require_version('GtkLayerShell', '0.1')
 gi.require_version('Gdk', '3.0')
 gi.require_version('WebKit2', '4.1')
 
-from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2
+from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2, GLib
 
 # Handle WebKitGTK permission requests
 def on_permission_decision(web_view, decision):
@@ -27,6 +27,9 @@ visualizer_height = 45
 menu_height = 250
 
 # Setup initial click-through window shape
+visualizer_position = "bottom"
+menu_height = 250
+
 def make_click_through(window):
     """Set initial input shape to empty region so it is click-through."""
     region = cairo.Region()
@@ -39,14 +42,36 @@ def update_input_shape(window, allocation):
     width = allocation.width
     height = allocation.height
 
-    # Bottom-right corner gear button is always clickable (40px wide, visualizer_height high)
-    gear_rect = cairo.RectangleInt(width - 40, height - visualizer_height, 40, visualizer_height)
-    region.union(gear_rect)
-
-    if menu_open:
-        # Floating popup controls menu (220 wide, custom height) sitting above the visualizer bars
-        menu_rect = cairo.RectangleInt(width - 230, height - (visualizer_height + menu_height + 10), 220, menu_height)
-        region.union(menu_rect)
+    if visualizer_position == "left":
+        gear_rect = cairo.RectangleInt(visualizer_height - 40, height - visualizer_height, 40, visualizer_height)
+        region.union(gear_rect)
+        if menu_open:
+            menu_rect = cairo.RectangleInt(10, height - (visualizer_height + menu_height + 10), 220, menu_height)
+            region.union(menu_rect)
+    elif visualizer_position == "right":
+        gear_rect = cairo.RectangleInt(width - 40, height - visualizer_height, 40, visualizer_height)
+        region.union(gear_rect)
+        if menu_open:
+            menu_rect = cairo.RectangleInt(width - 230, height - (visualizer_height + menu_height + 10), 220, menu_height)
+            region.union(menu_rect)
+    elif visualizer_position == "top":
+        gear_rect = cairo.RectangleInt(width - 40, 0, 40, visualizer_height)
+        region.union(gear_rect)
+        if menu_open:
+            menu_rect = cairo.RectangleInt(width - 230, visualizer_height + 10, 220, menu_height)
+            region.union(menu_rect)
+    elif visualizer_position == "fullscreen":
+        gear_rect = cairo.RectangleInt(width - 40, height - 45, 40, 45)
+        region.union(gear_rect)
+        if menu_open:
+            menu_rect = cairo.RectangleInt(width - 230, height - (45 + menu_height + 10), 220, menu_height)
+            region.union(menu_rect)
+    else:  # bottom
+        gear_rect = cairo.RectangleInt(width - 40, height - visualizer_height, 40, visualizer_height)
+        region.union(gear_rect)
+        if menu_open:
+            menu_rect = cairo.RectangleInt(width - 230, height - (visualizer_height + menu_height + 10), 220, menu_height)
+            region.union(menu_rect)
 
     window.input_shape_combine_region(region)
 
@@ -63,18 +88,20 @@ def on_title_changed(webview, pspec, window):
             if action == "menu-toggle":
                 menu_open = bool(data.get("open", False))
                 menu_height = int(data.get("menuHeight", 250))
-                # Adjust Gtk window height dynamically sitting above visualizer height (menu_height + padding)
-                target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
-                window.resize(window.get_size()[0], target_height)
-                window.set_size_request(0, target_height)
+                # Adjust Gtk window height dynamically only for bottom and top positions
+                if visualizer_position in ["bottom", "top"]:
+                    target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
+                    window.resize(window.get_size()[0], target_height)
+                    window.set_size_request(0, target_height)
                 # Re-evaluate the input shape region
                 window.queue_resize()
             elif action == "menu-resize":
                 menu_height = int(data.get("menuHeight", 250))
                 if menu_open:
-                    target_height = (visualizer_height + menu_height + 15)
-                    window.resize(window.get_size()[0], target_height)
-                    window.set_size_request(0, target_height)
+                    if visualizer_position in ["bottom", "top"]:
+                        target_height = (visualizer_height + menu_height + 15)
+                        window.resize(window.get_size()[0], target_height)
+                        window.set_size_request(0, target_height)
                     window.queue_resize()
             elif action == "close":
                 Gtk.main_quit()
@@ -112,13 +139,13 @@ def auto_route_audio(target_device):
             pass
 
 
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Wayland desktop background audio visualizer.")
-    parser.add_argument("--style", choices=["bars", "eq", "wave", "pulse"], default="bars", help="Visualization style")
-    parser.add_argument("--height", type=int, default=45, help="Visualizer height in pixels")
+    parser.add_argument("--style", choices=["bars", "eq", "wave", "pulse", "vu", "waterfall", "ribbon", "particles"], default="bars", help="Visualization style")
+    parser.add_argument("--height", type=int, default=45, help="Visualizer height/width in pixels")
     parser.add_argument("--device", default="alsa_output.pci-0000_01_00.1.hdmi-surround71.monitor", help="PulseAudio/PipeWire capture source device name")
+    parser.add_argument("--position", choices=["bottom", "top", "left", "right", "fullscreen"], default="bottom", help="Screen edge position")
     args = parser.parse_args()
 
     if args.device:
@@ -127,6 +154,11 @@ def main():
 
     window = Gtk.Window()
     window.set_title("Nix Audio Visualizer Background Component")
+
+    # Force transparent window background via GTK CSS provider
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_data(b"window { background: transparent; }")
+    window.get_style_context().add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     # Enable transparent RGBA rendering visual
     screen = window.get_screen()
@@ -140,25 +172,48 @@ def main():
     # Place on bottom layer (behind normal windows but above desktop wallpaper)
     GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
     
-    # Anchor to bottom-left-right of screen
-    GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
-    GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
-    GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
-    GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, False)
-    
-    # Disable keyboard focus grabs
-    GtkLayerShell.set_keyboard_mode(window, GtkLayerShell.KeyboardMode.NONE)
-
-    global visualizer_height
+    global visualizer_position, visualizer_height
+    visualizer_position = args.position
     visualizer_height = args.height
+
+    # Anchor and size request based on position
+    if args.position == "bottom":
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, False)
+        window.set_size_request(0, args.height)
+    elif args.position == "top":
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, False)
+        window.set_size_request(0, args.height)
+    elif args.position == "left":
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, False)
+        window.set_size_request(250, 0)
+    elif args.position == "right":
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, False)
+        window.set_size_request(250, 0)
+    elif args.position == "fullscreen":
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
+    
+    # Enable keyboard focus grabs on demand
+    GtkLayerShell.set_keyboard_mode(window, GtkLayerShell.KeyboardMode.ON_DEMAND)
 
     # Start the background audio auto-routing daemon
     import threading
     t = threading.Thread(target=auto_route_audio, args=(args.device,), daemon=True)
     t.start()
-
-    # Force a specific request size height
-    window.set_size_request(0, args.height)
 
     # Instantiate WebView
     webview = WebKit2.WebView()
@@ -179,10 +234,9 @@ def main():
     window.connect("realize", make_click_through)
     window.connect("size-allocate", update_input_shape)
     window.connect("destroy", Gtk.main_quit)
-
     # Load local index.html with query parameters
     local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "visualizer", "index.html"))
-    webview.load_uri(f"file://{local_path}?style={args.style}&height={args.height}&device={args.device}")
+    webview.load_uri(f"file://{local_path}?style={args.style}&height={args.height}&device={args.device}&position={args.position}")
 
     window.add(webview)
     window.show_all()

@@ -1,0 +1,10 @@
+{
+  "active_debt": [
+    {
+      "file": "visualizer/main.js",
+      "gate": "monolithic_file_limit",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "15"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 # Test Visualizer Integration Suite
-# Updated during implementation of task 14: logarithmic mapping tests verified.
+# Updated during task 15: low-pass waveform transient beat detection tests verified.
 import subprocess
 import sys
 

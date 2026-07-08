@@ -189,3 +189,189 @@ canvas {
     background: rgba(255, 0, 128, 0.4);
     color: white;
 }
+
+.menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+#helpTrigger {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    user-select: none;
+}
+
+#helpTrigger:hover {
+    background: #00f0ff;
+    color: black;
+}
+
+.kbd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.kbd-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #e0e0e0;
+}
+
+kbd {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #00f0ff;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+
+#backToSettings {
+    width: 100%;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+#backToSettings:hover {
+    background: #00f0ff;
+    color: black;
+}
+
+#toastNotification {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 10, 15, 0.85);
+    border: 1px solid #00f0ff;
+    color: #00f0ff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    text-transform: uppercase;
+}
+
+/* Now Playing Widget */
+#nowPlayingCard {
+    position: absolute;
+    bottom: 60px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(10, 10, 15, 0.75);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1), inset 0 0 10px rgba(0, 240, 255, 0.05);
+    border-radius: 12px;
+    padding: 10px;
+    width: 280px;
+    color: white;
+    z-index: 98;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#nowPlayingCard.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+.art-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#trackArt {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.track-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+#trackTitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: #00f0ff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#trackArtist {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+#trackProgress {
+    height: 100%;
+    width: 0%;
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+    transition: width 0.2s linear;
+}
