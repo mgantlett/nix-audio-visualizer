@@ -27,6 +27,8 @@ const styleSettings = {
         resolution: 512,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         barsCount: 64,
         barGap: 2,
@@ -40,6 +42,8 @@ const styleSettings = {
         resolution: 512,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         eqColumns: 24,
         segHeight: 4,
@@ -53,6 +57,8 @@ const styleSettings = {
         resolution: 512,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         lineWidth: 2.5,
         glowIntensity: 0.6
@@ -65,6 +71,8 @@ const styleSettings = {
         resolution: 512,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         orbiters: 8,
         ringSpeed: 1.5
@@ -77,6 +85,8 @@ const styleSettings = {
         resolution: 256,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         vuSegments: 40,
         vuGap: 3
@@ -89,6 +99,8 @@ const styleSettings = {
         resolution: 256,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         waterfallSpeed: 4
     },
@@ -100,6 +112,8 @@ const styleSettings = {
         resolution: 512,
         minDb: -90,
         beatSense: 0.25,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         ribbonThickness: 3.5,
         ribbonGlow: 0.7
@@ -112,6 +126,8 @@ const styleSettings = {
         resolution: 256,
         minDb: -90,
         beatSense: 0.3,
+        bloomIntensity: 0.5,
+        shakeIntensity: 1.0,
         // Style-specific
         particleCount: 60,
         particleSpeed: 1.0
@@ -125,6 +141,10 @@ let smoothingValue = 0.55;
 let minDecibelsValue = -90;
 let beatThresholdValue = 0.25;
 let fftSizeValue = 512;
+let bloomIntensityValue = 0.5;
+let shakeIntensityValue = 1.0;
+let currentShakeX = 0;
+let currentShakeY = 0;
 
 // Style-specific state variables
 let barsCount = 64;
@@ -145,13 +165,24 @@ let ribbonGlow = 0.7;
 let particleCount = 60;
 let particleSpeed = 1.0;
 
-// Stereo Analyser state objects
+// State objects
+const DEFAULT_STYLE_SETTINGS = JSON.parse(JSON.stringify(styleSettings));
+let audioCtx = null;
+let activeStream = null;
+let analyser = null;
 let analyserL = null;
 let analyserR = null;
+let dataArray = null;
+let waveArray = null;
 let dataArrayL = null;
-let dataArrayR = null;
 let waveArrayL = null;
+let dataArrayR = null;
 let waveArrayR = null;
+
+// Custom JS Smoothing EMA Buffers
+let smoothedDataArray = null;
+let smoothedDataArrayL = null;
+let smoothedDataArrayR = null;
 
 // VU meter peak-hold states
 let peakHoldL = 0;
@@ -236,6 +267,8 @@ const varSetters = {
     resolution: v => { fftSizeValue = v; },
     minDb: v => { minDecibelsValue = v; },
     beatSense: v => { beatThresholdValue = v; },
+    bloomIntensity: v => { bloomIntensityValue = v; },
+    shakeIntensity: v => { shakeIntensityValue = v; },
     barsCount: v => { barsCount = v; },
     barGap: v => { barGap = v; },
     peakDecay: v => { peakDecay = v; },
@@ -255,12 +288,7 @@ const varSetters = {
     particleSpeed: v => { particleSpeed = v; }
 };
 
-// State objects
-let audioCtx = null;
-let activeStream = null;
-let analyser = null;
-let dataArray = null;
-let waveArray = null;
+
 
 // Reactive state variables
 let smoothBass = 0;
@@ -1181,14 +1209,90 @@ function render() {
         analyser.getByteFrequencyData(dataArray);
         analyser.getByteTimeDomainData(waveArray);
 
+        // --- Custom JS Smoothing EMA Engine ---
+        const attackInertia = 0.05; // Snappy instant attack
+        const releaseInertia = smoothingValue; // Smooth buttery release
+
+        if (!smoothedDataArray || smoothedDataArray.length !== dataArray.length) {
+            smoothedDataArray = new Float32Array(dataArray.length);
+        }
+        for (let i = 0; i < dataArray.length; i++) {
+            const raw = dataArray[i];
+            if (raw > smoothedDataArray[i]) {
+                smoothedDataArray[i] = smoothedDataArray[i] * attackInertia + raw * (1 - attackInertia);
+            } else {
+                smoothedDataArray[i] = smoothedDataArray[i] * releaseInertia + raw * (1 - releaseInertia);
+            }
+            dataArray[i] = Math.round(smoothedDataArray[i]);
+        }
+
         if (analyserL && analyserR && dataArrayL && dataArrayR && waveArrayL && waveArrayR) {
             analyserL.getByteFrequencyData(dataArrayL);
             analyserL.getByteTimeDomainData(waveArrayL);
             analyserR.getByteFrequencyData(dataArrayR);
             analyserR.getByteTimeDomainData(waveArrayR);
+
+            if (!smoothedDataArrayL || smoothedDataArrayL.length !== dataArrayL.length) {
+                smoothedDataArrayL = new Float32Array(dataArrayL.length);
+                smoothedDataArrayR = new Float32Array(dataArrayR.length);
+            }
+            for (let i = 0; i < dataArrayL.length; i++) {
+                const rawL = dataArrayL[i];
+                if (rawL > smoothedDataArrayL[i]) {
+                    smoothedDataArrayL[i] = smoothedDataArrayL[i] * attackInertia + rawL * (1 - attackInertia);
+                } else {
+                    smoothedDataArrayL[i] = smoothedDataArrayL[i] * releaseInertia + rawL * (1 - releaseInertia);
+                }
+                dataArrayL[i] = Math.round(smoothedDataArrayL[i]);
+
+                const rawR = dataArrayR[i];
+                if (rawR > smoothedDataArrayR[i]) {
+                    smoothedDataArrayR[i] = smoothedDataArrayR[i] * attackInertia + rawR * (1 - attackInertia);
+                } else {
+                    smoothedDataArrayR[i] = smoothedDataArrayR[i] * releaseInertia + rawR * (1 - releaseInertia);
+                }
+                dataArrayR[i] = Math.round(smoothedDataArrayR[i]);
+            }
         }
 
         updateReactiveState();
+    }
+
+    // --- Dynamic VFX Engine ---
+    let shakeTransform = '';
+    let bloomFilter = '';
+
+    if (shakeIntensityValue > 0 && analyser) {
+        if (isBeat) {
+            const maxShake = 30 * shakeIntensityValue;
+            currentShakeX = (Math.random() - 0.5) * maxShake;
+            currentShakeY = (Math.random() - 0.5) * maxShake;
+        }
+        if (Math.abs(currentShakeX) > 0.1 || Math.abs(currentShakeY) > 0.1) {
+            shakeTransform = `translate(${currentShakeX}px, ${currentShakeY}px)`;
+            // Spring decay
+            currentShakeX *= 0.8;
+            currentShakeY *= 0.8;
+        } else {
+            currentShakeX = 0;
+            currentShakeY = 0;
+        }
+    }
+
+    if (bloomIntensityValue > 0 && analyser) {
+        // Bloom scales non-linearly with energy
+        const bloomRadius = Math.pow(energy, 2.0) * 100 * bloomIntensityValue;
+        if (bloomRadius > 1) {
+            bloomFilter = `drop-shadow(0px 0px ${bloomRadius}px hsl(${hue}, 100%, 60%))`;
+        }
+    }
+
+    if (shakeTransform || bloomFilter) {
+        canvas.style.transform = shakeTransform || 'none';
+        canvas.style.filter = bloomFilter || 'none';
+    } else {
+        canvas.style.transform = '';
+        canvas.style.filter = '';
     }
 
     switch (currentStyle) {
@@ -1264,7 +1368,7 @@ function setupAnalyserNodes(source) {
     // Create main analyser
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = fftSizeValue;
-    analyser.smoothingTimeConstant = smoothingValue;
+    analyser.smoothingTimeConstant = 0.0;
     analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
     
     const bufferLength = analyser.frequencyBinCount;
@@ -1276,10 +1380,10 @@ function setupAnalyserNodes(source) {
     analyserL = audioCtx.createAnalyser();
     analyserR = audioCtx.createAnalyser();
     analyserL.fftSize = fftSizeValue;
-    analyserL.smoothingTimeConstant = smoothingValue;
+    analyserL.smoothingTimeConstant = 0.0;
     analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
     analyserR.fftSize = fftSizeValue;
-    analyserR.smoothingTimeConstant = smoothingValue;
+    analyserR.smoothingTimeConstant = 0.0;
     analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
 
     dataArrayL = new Uint8Array(bufferLength);
@@ -1418,15 +1522,15 @@ function applyStyleSettings() {
         // Apply values to analyser context if running
         if (analyser) {
             analyser.fftSize = fftSizeValue;
-            analyser.smoothingTimeConstant = smoothingValue;
+            analyser.smoothingTimeConstant = 0.0;
             analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
             
             if (analyserL && analyserR) {
                 analyserL.fftSize = fftSizeValue;
-                analyserL.smoothingTimeConstant = smoothingValue;
+                analyserL.smoothingTimeConstant = 0.0;
                 analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
                 analyserR.fftSize = fftSizeValue;
-                analyserR.smoothingTimeConstant = smoothingValue;
+                analyserR.smoothingTimeConstant = 0.0;
                 analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
             }
 
@@ -1446,7 +1550,14 @@ function applyStyleSettings() {
         // Set scanlines opacity in style
         document.body.style.setProperty('--scanlines-opacity', config.scanlines);
 
-        const updateVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        const updateVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = val;
+                const span = el.parentNode.querySelector('.slider-val');
+                if (span) span.textContent = val;
+            }
+        };
         updateVal('themeSelect', currentTheme);
         updateVal('gainSlider', sensitivityMultiplier);
         updateVal('smoothingSlider', smoothingValue);
@@ -1454,6 +1565,8 @@ function applyStyleSettings() {
         updateVal('fftSelect', fftSizeValue);
         updateVal('dbSlider', minDecibelsValue);
         updateVal('beatSlider', beatThresholdValue);
+        updateVal('bloomSlider', bloomIntensityValue);
+        updateVal('shakeSlider', shakeIntensityValue);
         updateVal('barsSlider', barsCount);
         updateVal('barGapSlider', barGap);
         updateVal('decaySlider', peakDecay);
@@ -1585,6 +1698,40 @@ window.addEventListener('load', () => {
     // Apply active style configuration
     applyStyleSettings();
 
+    // Inject dynamic value displays for all range sliders
+    document.querySelectorAll('#controlsMenu input[type="range"]').forEach(slider => {
+        // Only append if it doesn't already have one (to be safe)
+        if (!slider.parentNode.querySelector('.slider-val')) {
+            const span = document.createElement('span');
+            span.className = 'slider-val';
+            span.textContent = slider.value;
+            slider.parentNode.appendChild(span);
+            
+            slider.addEventListener('input', () => {
+                span.textContent = slider.value;
+            });
+        }
+    });
+
+    // Reset Defaults Button
+    const resetBtn = document.getElementById('resetSettingsBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (DEFAULT_STYLE_SETTINGS[currentStyle]) {
+                // Deep copy default configurations back into active style
+                Object.assign(styleSettings[currentStyle], JSON.parse(JSON.stringify(DEFAULT_STYLE_SETTINGS[currentStyle])));
+                saveAllSettings();
+                applyStyleSettings();
+                
+                // Provide visual feedback
+                if (typeof showToast === 'function') {
+                    showToast(`Restored defaults for ${currentStyle} style`);
+                }
+            }
+        });
+    }
+
     // Attempt initialization automatically
     initAudio();
 
@@ -1645,12 +1792,12 @@ window.addEventListener('load', () => {
         { id: 'themeSelect', key: 'theme', type: 'change', parse: v => v },
         { id: 'gainSlider', key: 'sensitivity', type: 'input', parse: parseFloat },
         { id: 'smoothingSlider', key: 'smoothing', type: 'input', parse: parseFloat, cb: v => {
-            if (analyser) analyser.smoothingTimeConstant = v;
+            if (analyser) analyser.smoothingTimeConstant = 0.0;
             if (analyserL && analyserR) {
-                analyserL.smoothingTimeConstant = v;
-                analyserR.smoothingTimeConstant = v;
+                analyserL.smoothingTimeConstant = 0.0;
+                analyserR.smoothingTimeConstant = 0.0;
             }
-        } },
+        }},
         { id: 'scanlinesSlider', key: 'scanlines', type: 'input', parse: parseFloat, cb: v => document.body.style.setProperty('--scanlines-opacity', v) },
         { id: 'fftSelect', key: 'resolution', type: 'change', parse: parseInt, cb: v => {
             if (analyser && analyser.fftSize !== v) {
@@ -1676,6 +1823,8 @@ window.addEventListener('load', () => {
             }
         } },
         { id: 'beatSlider', key: 'beatSense', type: 'input', parse: parseFloat },
+        { id: 'bloomSlider', key: 'bloomIntensity', type: 'input', parse: parseFloat },
+        { id: 'shakeSlider', key: 'shakeIntensity', type: 'input', parse: parseFloat },
         // Style-specific inputs
         { id: 'barsSlider', key: 'barsCount', type: 'input', parse: parseInt, style: 'bars' },
         { id: 'barGapSlider', key: 'barGap', type: 'input', parse: parseInt, style: 'bars' },

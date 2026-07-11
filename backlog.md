@@ -16,3 +16,8 @@
 ## Epic 4: Custom JS Smoothing Engine
 - **Decoupled Smoothing:** Disable native WebAudio `smoothingTimeConstant` (set to `0.0`).
 - **Custom EMA:** Build a custom exponential moving average (EMA) in JavaScript to allow independent smoothing attack and release speeds (e.g., instant attack on the beat, but a slow buttery fade-out).
+
+## Epic 5: External Hardware & DIY Integration
+- **Web-to-Native Bridge:** Establish a two-way IPC bridge between the WebKit JavaScript engine and the Python host daemon using `window.webkit.messageHandlers`.
+- **WLED / Art-Net Integration:** Stream beat, energy, and hue telemetry as UDP packets to local ESP32 WLED controllers or professional DMX/Art-Net fixtures.
+- **Direct Serial (Firmata/Arduino):** Pass raw audio bin data through Python's `pyserial` to physical microcontrollers for driving galvo lasers, servo motors, or physical LED matrices.

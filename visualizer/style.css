@@ -700,3 +700,70 @@ kbd {
     margin-top: 6px !important;
     margin-bottom: 8px !important;
 }
+
+.slider-val {
+    display: inline-block;
+    min-width: 32px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 12px;
+    color: #00ffcc;
+    margin-left: 8px;
+}
+
+#controlsMenu.winamp-menu .slider-val {
+    color: #00ff00 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+}
+
+.reset-btn {
+    background: rgba(255, 60, 60, 0.2);
+    border: 1px solid rgba(255, 60, 60, 0.4);
+    color: #ffaaaa;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    width: 100%;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 60, 60, 0.4);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 60, 60, 0.4);
+}
+
+#controlsMenu.winamp-menu .reset-btn {
+    background: linear-gradient(#40404a, #26262b) !important;
+    border: 1.5px solid #000000 !important;
+    border-top-color: #5a5a64 !important;
+    border-left-color: #5a5a64 !important;
+    color: #c2c2d6 !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: bold !important;
+    font-size: 11px !important;
+    border-radius: 0px !important;
+    padding: 6px !important;
+    text-transform: uppercase !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1) !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+}
+
+#controlsMenu.winamp-menu .reset-btn:hover {
+    color: #ff3333 !important;
+}
+
+#controlsMenu.winamp-menu .reset-btn:active {
+    border-color: #7e7e8c !important;
+    border-top-color: #000000 !important;
+    border-left-color: #000000 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8) !important;
+    padding-top: 7px !important;
+    padding-bottom: 5px !important;
+}
