@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 import os
 import sys
+import json
+import subprocess
+import socket
+import threading
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 import gi
 import cairo
 
@@ -9,6 +15,10 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('GtkLayerShell', '0.1')
 gi.require_version('Gdk', '3.0')
 gi.require_version('WebKit2', '4.1')
+try:
+    gi.require_version('Playerctl', '2.0')
+except Exception:
+    pass
 
 from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2, GLib
 
@@ -88,6 +98,11 @@ def on_title_changed(webview, pspec, window):
             if action == "menu-toggle":
                 menu_open = bool(data.get("open", False))
                 menu_height = int(data.get("menuHeight", 250))
+                # Bring window to front layer when settings menu is open
+                if menu_open:
+                    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP)
+                else:
+                    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
                 # Adjust Gtk window height dynamically only for bottom and top positions
                 if visualizer_position in ["bottom", "top"]:
                     target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
@@ -105,6 +120,38 @@ def on_title_changed(webview, pspec, window):
                     window.queue_resize()
             elif action == "close":
                 Gtk.main_quit()
+            elif action == "media-control":
+                cmd = data.get("command")
+                if cmd == "prev":
+                    cmd = "previous"
+                if cmd in ["play-pause", "next", "previous", "play", "pause"]:
+                    try:
+                        from gi.repository import Playerctl
+                        players = Playerctl.list_players()
+                        if players:
+                            target_name = None
+                            for p in players:
+                                if "chromium" in p.name or "chrome" in p.name:
+                                    target_name = p
+                                    break
+                            if not target_name:
+                                target_name = players[0]
+                            player = Playerctl.Player.new_from_name(target_name)
+                            if cmd == "play":
+                                player.play()
+                            elif cmd == "pause":
+                                player.pause()
+                            elif cmd == "play-pause":
+                                player.play_pause()
+                            elif cmd == "next":
+                                player.next()
+                            elif cmd == "previous":
+                                player.previous()
+                    except Exception:
+                        try:
+                            subprocess.run(["playerctl", cmd], capture_output=True)
+                        except Exception:
+                            pass
         except Exception:
             pass
 
@@ -138,6 +185,175 @@ def auto_route_audio(target_device):
         except Exception:
             pass
 
+# Retrieve active player metadata via playerctl MPRIS API
+def get_mpris_metadata():
+    """Retrieve metadata (title, artist, album, art url, status, length, position) from active chromium/chrome media players via MPRIS."""
+    try:
+        from gi.repository import Playerctl
+        players = Playerctl.list_players()
+        if not players:
+            return None
+        
+        target_name = None
+        for p in players:
+            if "chromium" in p.name or "chrome" in p.name:
+                target_name = p
+                break
+        if not target_name:
+            target_name = players[0]
+            
+        player = Playerctl.Player.new_from_name(target_name)
+        
+        title = player.get_title() or ""
+        artist = player.get_artist() or ""
+        album = player.get_album() or ""
+        art_url = player.print_metadata_prop("mpris:artUrl") or ""
+        playback_status = str(player.get_playback_status())
+        
+        status_str = "Stopped"
+        if "PLAYING" in playback_status.upper():
+            status_str = "Playing"
+        elif "PAUSED" in playback_status.upper():
+            status_str = "Paused"
+            
+        length = 0
+        try:
+            length = int(player.print_metadata_prop("mpris:length") or 0)
+        except Exception:
+            pass
+            
+        position = 0
+        try:
+            position = player.get_position()
+        except Exception:
+            pass
+            
+        return {
+            "title": title,
+            "artist": artist,
+            "album": album,
+            "artUrl": art_url,
+            "status": status_str,
+            "length": length,
+            "position": position
+        }
+    except Exception as e:
+        try:
+            output = subprocess.check_output(["playerctl", "-l"], text=True).strip().split()
+            if not output:
+                return None
+            target = None
+            for p in output:
+                if "chromium" in p or "chrome" in p:
+                    target = p
+                    break
+            if not target:
+                target = output[0]
+            
+            title = subprocess.check_output(["playerctl", "-p", target, "metadata", "title"], text=True).strip()
+            artist = subprocess.check_output(["playerctl", "-p", target, "metadata", "artist"], text=True).strip()
+            album = subprocess.check_output(["playerctl", "-p", target, "metadata", "album"], text=True).strip()
+            art_url = subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:artUrl"], text=True).strip()
+            status = subprocess.check_output(["playerctl", "-p", target, "status"], text=True).strip()
+            
+            try:
+                length = int(subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:length"], text=True).strip())
+            except:
+                length = 0
+            try:
+                position = int(subprocess.check_output(["playerctl", "-p", target, "position"], text=True).strip()) * 1000000
+            except:
+                position = 0
+                
+            return {
+                "title": title,
+                "artist": artist,
+                "album": album,
+                "artUrl": art_url,
+                "status": status,
+                "length": length,
+                "position": position
+            }
+        except Exception:
+            return None
+
+# Safely execute javascript code avoiding WebKit deprecation warnings
+def run_js(webview, js_code):
+    """Safely execute javascript code avoiding deprecation warnings in WebKit."""
+    try:
+        webview.evaluate_javascript(js_code, -1, None, None, None, None)
+    except Exception:
+        try:
+            webview.evaluate_javascript(js_code, -1, None, None, None)
+        except Exception:
+            try:
+                webview.run_javascript(js_code, None, None, None)
+            except Exception:
+                pass
+
+# Push current MPRIS metadata updates to visualizer web frame
+def update_mpris_metadata(webview):
+    """Serialize MPRIS metadata and inject it into the WebKit WebView via window.onMetadataUpdate callback."""
+    metadata = get_mpris_metadata()
+    if metadata:
+        js_code = f"if (window.onMetadataUpdate) {{ window.onMetadataUpdate({json.dumps(metadata)}); }}"
+    else:
+        js_code = "if (window.onMetadataUpdate) {{ window.onMetadataUpdate(null); }}"
+    
+    run_js(webview, js_code)
+    return True
+
+# Helper to determine user-specific socket file path for Wayland IPC
+def get_socket_path():
+    """Return user-specific UNIX socket path for remote command dispatching."""
+    return f"/tmp/nix-audio-visualizer-{os.getuid()}.sock"
+
+# Dispatch received remote command to main WebView javascript execution context
+def handle_ipc_command(command, webview, window):
+    """Parse remote commands and dynamically inject the matching window control function."""
+    js_code = None
+    if command == "toggle-menu":
+        js_code = "if (typeof toggleMenu === 'function') { toggleMenu(); }"
+    elif command == "toggle-hud":
+        js_code = "if (window.toggleHudGlobal) { window.toggleHudGlobal(); }"
+    elif command == "cycle-style-forward":
+        js_code = "if (window.cycleStyle) { window.cycleStyle(true); }"
+    elif command == "cycle-style-backward":
+        js_code = "if (window.cycleStyle) { window.cycleStyle(false); }"
+    elif command == "cycle-theme-forward":
+        js_code = "if (window.cycleTheme) { window.cycleTheme(true); }"
+    elif command == "cycle-theme-backward":
+        js_code = "if (window.cycleTheme) { window.cycleTheme(false); }"
+    elif command == "gain-up":
+        js_code = "if (window.adjustGain) { window.adjustGain(true); }"
+    elif command == "gain-down":
+        js_code = "if (window.adjustGain) { window.adjustGain(false); }"
+        
+    if js_code:
+        run_js(webview, js_code)
+
+# Listen on the local UNIX socket and dispatch incoming hotkey commands
+def listen_ipc(webview, window):
+    """Start local socket server listening to command triggers from visualizer controller CLI."""
+    socket_path = get_socket_path()
+    if os.path.exists(socket_path):
+        try:
+            os.remove(socket_path)
+        except Exception:
+            pass
+    try:
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.bind(socket_path)
+        server.listen(1)
+        while True:
+            conn, _ = server.accept()
+            data = conn.recv(1024).decode('utf-8').strip()
+            if data:
+                GLib.idle_add(handle_ipc_command, data, webview, window)
+            conn.close()
+    except Exception as e:
+        pass
+
 
 def main():
     import argparse
@@ -146,7 +362,20 @@ def main():
     parser.add_argument("--height", type=int, default=45, help="Visualizer height/width in pixels")
     parser.add_argument("--device", default="alsa_output.pci-0000_01_00.1.hdmi-surround71.monitor", help="PulseAudio/PipeWire capture source device name")
     parser.add_argument("--position", choices=["bottom", "top", "left", "right", "fullscreen"], default="bottom", help="Screen edge position")
+    parser.add_argument("--send", help="Send command to running visualizer instance (e.g. toggle-menu, toggle-hud)")
     args = parser.parse_args()
+
+    if args.send:
+        socket_path = f"/tmp/nix-audio-visualizer-{os.getuid()}.sock"
+        try:
+            client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            client.connect(socket_path)
+            client.sendall(args.send.encode('utf-8'))
+            client.close()
+            sys.exit(0)
+        except Exception as e:
+            print(f"Error: Visualizer daemon is not running or socket connection failed ({e}).", file=sys.stderr)
+            sys.exit(1)
 
     if args.device:
         os.environ["PULSE_SOURCE"] = args.device
@@ -237,6 +466,13 @@ def main():
     # Load local index.html with query parameters
     local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "visualizer", "index.html"))
     webview.load_uri(f"file://{local_path}?style={args.style}&height={args.height}&device={args.device}&position={args.position}")
+
+    # Start the MPRIS metadata update polling loop (every 1 second)
+    GLib.timeout_add(1000, update_mpris_metadata, webview)
+
+    # Start IPC server thread for global keyboard shortcuts
+    ipc_thread = threading.Thread(target=listen_ipc, args=(webview, window), daemon=True)
+    ipc_thread.start()
 
     window.add(webview)
     window.show_all()

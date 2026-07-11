@@ -1,4 +1,0 @@
-[submodule ".ado-core"]
-	path = .ado-core
-	url = git@github.com:mgantlett/ado-core.git
-	branch = develop

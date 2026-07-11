@@ -8,16 +8,14 @@
 <body>
     <canvas id="visualizerCanvas"></canvas>
     
-    <!-- Now Playing overlay widget -->
-    <div id="nowPlayingCard" class="hidden">
-        <div class="art-container">
-            <img id="trackArt" src="" alt="">
-        </div>
-        <div class="track-info">
-            <div id="trackTitle">Not Playing</div>
-            <div id="trackArtist">Unknown Artist</div>
-            <div class="progress-bar-container">
-                <div id="trackProgress" class="progress-bar"></div>
+    <!-- Music HUD overlay widget (Car Stereo LCD style) -->
+    <div id="musicHud" class="green-lcd">
+        <div class="hud-screen">
+            <div class="hud-text-container">
+                <div id="hudMarquee" class="hud-marquee">NO TRACK ACTIVE</div>
+            </div>
+            <div class="hud-progress-container">
+                <div id="hudProgressBar" class="hud-progress-bar"></div>
             </div>
         </div>
     </div>
@@ -87,6 +85,23 @@
             <div class="menu-group">
                 <label for="dbSlider">Audio Floor (dB):</label>
                 <input type="range" id="dbSlider" min="-100" max="-35" step="5" value="-90">
+            </div>
+
+            <!-- Music HUD Settings -->
+            <div class="menu-group">
+                <label for="hudShowToggle">Show Music HUD:</label>
+                <input type="checkbox" id="hudShowToggle" checked>
+            </div>
+
+            <div class="menu-group">
+                <label for="hudThemeSelect">HUD Theme:</label>
+                <select id="hudThemeSelect">
+                    <option value="green-lcd">Retro Green LCD</option>
+                    <option value="amber-lcd">Vintage Amber LCD</option>
+                    <option value="cyan-neon">Cyberpunk Cyan</option>
+                    <option value="red-led">Digital Red LED</option>
+                    <option value="winamp-classic">Winamp Classic</option>
+                </select>
             </div>
 
             <div class="menu-group" id="beatGroup">
@@ -206,6 +221,7 @@
         <div id="shortcutsCard" style="display: none;">
             <div class="kbd-list">
                 <div class="kbd-item"><kbd>M</kbd> <span>Toggle Menu</span></div>
+                <div class="kbd-item"><kbd>H</kbd> <span>Toggle HUD</span></div>
                 <div class="kbd-item"><kbd>S</kbd> <span>Cycle Style</span></div>
                 <div class="kbd-item"><kbd>T</kbd> <span>Cycle Theme</span></div>
                 <div class="kbd-item"><kbd>▲</kbd> <span>Sensitivity +</span></div>

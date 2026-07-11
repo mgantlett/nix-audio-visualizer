@@ -14,6 +14,8 @@ let toggleHelp = null;
 const isLeft = currentPosition === 'left';
 const isRight = currentPosition === 'right';
 const visThickness = parseInt(urlParams.get('height') || '45');
+let hudShow = true;
+let hudTheme = 'green-lcd';
 
 // Unified Style-Specific Configurations mapping
 const styleSettings = {
@@ -200,18 +202,19 @@ function buildMapping(targetCount) {
     const sampleRate = (audioCtx && audioCtx.sampleRate) ? audioCtx.sampleRate : 48000;
     const binCount = fftSizeValue / 2;
     const mappings = [];
-    const minFreq = 20; // Hz
+    const minFreq = 45; // Hz (Skip sub-audible infrasound rumbles to separate low bars)
     const maxFreq = 16000; // Hz
     
     for (let i = 0; i < targetCount; i++) {
         const fStart = minFreq * Math.pow(maxFreq / minFreq, i / targetCount);
         const fEnd = minFreq * Math.pow(maxFreq / minFreq, (i + 1) / targetCount);
         
-        const binStart = (fStart * fftSizeValue) / sampleRate;
-        const binEnd = (fEnd * fftSizeValue) / sampleRate;
+        // Offset by 1.0 to skip the DC offset bin 0
+        const binStart = 1.0 + (fStart * fftSizeValue) / sampleRate;
+        const binEnd = 1.0 + (fEnd * fftSizeValue) / sampleRate;
         
         mappings.push({
-            start: Math.max(0, binStart),
+            start: Math.max(1, binStart),
             end: Math.min(binCount - 1, binEnd)
         });
     }
@@ -254,6 +257,7 @@ const varSetters = {
 
 // State objects
 let audioCtx = null;
+let activeStream = null;
 let analyser = null;
 let dataArray = null;
 let waveArray = null;
@@ -1136,27 +1140,19 @@ function updateReactiveState() {
     const rawEnergy = Math.sqrt(total / len);
     smoothEnergy = smoothEnergy * SMOOTH + rawEnergy * (1 - SMOOTH);
 
-    // Unsmoothed low-pass envelope beat detector from raw waveform samples
-    let bassAmpSum = 0;
-    const waveLen = waveArray ? waveArray.length : 0;
-    if (waveLen > 0) {
-        for (let i = 0; i < waveLen; i++) {
-            const sample = (waveArray[i] - 128) / 128;
-            // First-order IIR low pass filter (alpha = 0.05 for cut-off around 150Hz at 48kHz)
-            lpVal += (sample - lpVal) * 0.05;
-            bassAmpSum += Math.abs(lpVal);
-        }
-    }
-    const instBassAmp = waveLen > 0 ? (bassAmpSum / waveLen) : 0;
+    // Pure frequency-domain beat detection (isolated low-frequency bass kick region)
+    // dataArray[1] to dataArray[3] represent frequency bins around 93Hz - 280Hz at 48kHz
+    const currentBass = ((dataArray[1] || 0) + (dataArray[2] || 0) + (dataArray[3] || 0)) / (3 * 255);
 
-    // Smooth long-term average of the bass waveform envelope
-    smoothBassAmp = smoothBassAmp * 0.95 + instBassAmp * 0.05;
+    // Smooth long-term average of the bass band energy
+    smoothBassAmp = smoothBassAmp * 0.95 + currentBass * 0.05;
 
-    // Beat transient detection: check if instantaneous low-pass envelope spikes above the dynamic average
+    // Beat transient detection: check if instantaneous bass energy spikes above the dynamic average.
+    // The threshold is dynamic, auto-scaling with the running average bass level.
     isBeat = false;
     const now = performance.now();
-    const threshold = beatThresholdValue * 0.15;
-    if ((instBassAmp - smoothBassAmp) > threshold && (now - lastBeat) > BEAT_COOLDOWN_MS) {
+    const dynamicThreshold = Math.max(0.012, smoothBassAmp * (0.15 + (1.0 - beatThresholdValue) * 0.3));
+    if ((currentBass - smoothBassAmp) > dynamicThreshold && (now - lastBeat) > BEAT_COOLDOWN_MS) {
         isBeat = true;
         lastBeat = now;
     }
@@ -1246,6 +1242,94 @@ function getAudioConstraints(devices) {
     };
 }
 
+function cleanupAudio() {
+    if (audioCtx) {
+        try {
+            audioCtx.close();
+        } catch (e) {}
+        audioCtx = null;
+    }
+    if (activeStream) {
+        try {
+            activeStream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
+        activeStream = null;
+    }
+    analyser = null;
+    analyserL = null;
+    analyserR = null;
+}
+
+function setupAnalyserNodes(source) {
+    // Create main analyser
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = fftSizeValue;
+    analyser.smoothingTimeConstant = smoothingValue;
+    analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
+    
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+    waveArray = new Uint8Array(bufferLength);
+    source.connect(analyser);
+
+    // Create Left and Right analysers
+    analyserL = audioCtx.createAnalyser();
+    analyserR = audioCtx.createAnalyser();
+    analyserL.fftSize = fftSizeValue;
+    analyserL.smoothingTimeConstant = smoothingValue;
+    analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
+    analyserR.fftSize = fftSizeValue;
+    analyserR.smoothingTimeConstant = smoothingValue;
+    analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
+
+    dataArrayL = new Uint8Array(bufferLength);
+    waveArrayL = new Uint8Array(bufferLength);
+    dataArrayR = new Uint8Array(bufferLength);
+    waveArrayR = new Uint8Array(bufferLength);
+
+    const splitter = audioCtx.createChannelSplitter(2);
+    source.connect(splitter);
+    splitter.connect(analyserL, 0);
+
+    // Fallback to channel 0 if mono input
+    const trackSettings = activeStream.getAudioTracks()[0]?.getSettings();
+    const channelCount = trackSettings?.channelCount || source.channelCount;
+    if (channelCount >= 2) {
+        splitter.connect(analyserR, 1);
+    } else {
+        splitter.connect(analyserR, 0);
+    }
+
+    precomputeMappings();
+}
+
+function resetAudioContext() {
+    if (!audioCtx || !activeStream) return;
+    
+    console.log("🔊 Flushing audio context to clear latency/drift buffer...");
+    
+    // Close old context
+    try {
+        audioCtx.close();
+    } catch (e) {}
+    audioCtx = null;
+    
+    // Recreate context
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+            latencyHint: 'interactive',
+            sampleRate: 48000
+        });
+    } catch (e) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+            latencyHint: 'interactive'
+        });
+    }
+    
+    const source = audioCtx.createMediaStreamSource(activeStream);
+    setupAnalyserNodes(source);
+}
+
 function initAudio() {
     if (audioCtx) return;
     const baseConstraints = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } }, video: false };
@@ -1270,49 +1354,19 @@ function initAudio() {
                 }));
         })
         .then(stream => {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioCtx.createMediaStreamSource(stream);
-            
-            // Create main analyser
-            analyser = audioCtx.createAnalyser();
-            analyser.fftSize = fftSizeValue;
-            analyser.smoothingTimeConstant = smoothingValue;
-            analyser.minDecibels = Math.min(analyser.maxDecibels - 1, minDecibelsValue);
-            
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-            waveArray = new Uint8Array(bufferLength);
-            source.connect(analyser);
-
-            // Create Left and Right analysers
-            analyserL = audioCtx.createAnalyser();
-            analyserR = audioCtx.createAnalyser();
-            analyserL.fftSize = fftSizeValue;
-            analyserL.smoothingTimeConstant = smoothingValue;
-            analyserL.minDecibels = Math.min(analyserL.maxDecibels - 1, minDecibelsValue);
-            analyserR.fftSize = fftSizeValue;
-            analyserR.smoothingTimeConstant = smoothingValue;
-            analyserR.minDecibels = Math.min(analyserR.maxDecibels - 1, minDecibelsValue);
-
-            dataArrayL = new Uint8Array(bufferLength);
-            waveArrayL = new Uint8Array(bufferLength);
-            dataArrayR = new Uint8Array(bufferLength);
-            waveArrayR = new Uint8Array(bufferLength);
-
-            const splitter = audioCtx.createChannelSplitter(2);
-            source.connect(splitter);
-            splitter.connect(analyserL, 0);
-
-            // Fallback to channel 0 if mono input
-            const trackSettings = stream.getAudioTracks()[0]?.getSettings();
-            const channelCount = trackSettings?.channelCount || source.channelCount;
-            if (channelCount >= 2) {
-                splitter.connect(analyserR, 1);
-            } else {
-                splitter.connect(analyserR, 0);
+            activeStream = stream;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+                    latencyHint: 'interactive',
+                    sampleRate: 48000
+                });
+            } catch (e) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+                    latencyHint: 'interactive'
+                });
             }
-
-            precomputeMappings();
+            const source = audioCtx.createMediaStreamSource(stream);
+            setupAnalyserNodes(source);
             render();
         })
         .catch(err => {
@@ -1517,6 +1571,17 @@ window.addEventListener('load', () => {
     const savedStyle = localStorage.getItem('visualizer-style');
     if (savedStyle) currentStyle = savedStyle;
 
+    // Load HUD settings from localStorage
+    const savedHudShow = localStorage.getItem('visualizer-hud-show');
+    if (savedHudShow !== null) {
+        hudShow = savedHudShow === 'true';
+    }
+    const savedHudTheme = localStorage.getItem('visualizer-hud-theme');
+    if (savedHudTheme) {
+        hudTheme = savedHudTheme;
+    }
+    updateHudDisplay();
+
     // Apply active style configuration
     applyStyleSettings();
 
@@ -1552,6 +1617,27 @@ window.addEventListener('load', () => {
             }
         });
     }
+    // Setup HUD options event listeners
+    const hudShowToggle = document.getElementById('hudShowToggle');
+    if (hudShowToggle) {
+        hudShowToggle.checked = hudShow;
+        hudShowToggle.addEventListener('change', (e) => {
+            hudShow = e.target.checked;
+            localStorage.setItem('visualizer-hud-show', hudShow);
+            updateHudDisplay();
+        });
+    }
+
+    const hudThemeSelect = document.getElementById('hudThemeSelect');
+    if (hudThemeSelect) {
+        hudThemeSelect.value = hudTheme;
+        hudThemeSelect.addEventListener('change', (e) => {
+            hudTheme = e.target.value;
+            localStorage.setItem('visualizer-hud-theme', hudTheme);
+            updateHudDisplay();
+        });
+    }
+
     updateControlsVisibility();
 
     // Setup inputs mapping helper to register change listeners dynamically
@@ -1726,11 +1812,68 @@ window.addEventListener('load', () => {
         });
     }
 
+    // Global control functions for keyboard shortcuts and IPC
+    window.toggleHudGlobal = function() {
+        hudShow = !hudShow;
+        localStorage.setItem('visualizer-hud-show', hudShow);
+        const hudShowToggle = document.getElementById('hudShowToggle');
+        if (hudShowToggle) {
+            hudShowToggle.checked = hudShow;
+        }
+        updateHudDisplay();
+        if (typeof showToast === 'function') {
+            showToast(hudShow ? "HUD: Enabled" : "HUD: Disabled");
+        }
+    };
+
+    window.cycleStyle = function(forward) {
+        const styles = ['bars', 'eq', 'wave', 'pulse', 'vu', 'waterfall', 'ribbon', 'particles'];
+        let currentIndex = styles.indexOf(currentStyle);
+        let nextIndex = forward ? 
+            (currentIndex + 1) % styles.length : 
+            (currentIndex - 1 + styles.length) % styles.length;
+        const styleSelect = document.getElementById('styleSelect');
+        if (styleSelect) {
+            styleSelect.value = styles[nextIndex];
+            styleSelect.dispatchEvent(new Event('change'));
+        }
+    };
+
+    window.cycleTheme = function(forward) {
+        const themes = ['cyberpunk', 'matrix', 'neon', 'volcano', 'monochrome'];
+        let currentIndex = themes.indexOf(currentTheme);
+        let nextIndex = forward ? 
+            (currentIndex + 1) % themes.length : 
+            (currentIndex - 1 + themes.length) % themes.length;
+        const themeSelect = document.getElementById('themeSelect');
+        if (themeSelect) {
+            themeSelect.value = themes[nextIndex];
+            themeSelect.dispatchEvent(new Event('change'));
+        }
+    };
+
+    window.adjustGain = function(up) {
+        const gainSlider = document.getElementById('gainSlider');
+        if (gainSlider) {
+            let val = parseFloat(gainSlider.value);
+            val = up ? Math.min(3.0, val + 0.1) : Math.max(0.5, val - 0.1);
+            gainSlider.value = val;
+            gainSlider.dispatchEvent(new Event('input'));
+            if (typeof showToast === 'function') {
+                showToast(`Sensitivity: ${val.toFixed(1)}`);
+            }
+        }
+    };
+
     // Keyboard shortcuts
     window.addEventListener('keydown', (e) => {
         // 'm' key toggles menu
         if (e.key === 'm' || e.key === 'M') {
             toggleMenu(!menuOpen);
+        }
+        // 'h' or 'H' key toggles HUD
+        else if (e.key === 'h' || e.key === 'H') {
+            toggleHudGlobal();
         }
         // 'Escape' key hides menu or help card
         else if (e.key === 'Escape') {
@@ -1831,77 +1974,61 @@ function showToast(msg) {
     }, 1200);
 }
 
-// Now Playing Metadata Integration
+// Music HUD Metadata Integration
 let currentMetadata = null;
 
 window.onMetadataUpdate = function(metadata) {
     currentMetadata = metadata;
-    const card = document.getElementById('nowPlayingCard');
-    if (!card) return;
+    const hud = document.getElementById('musicHud');
+    const marquee = document.getElementById('hudMarquee');
+    const progress = document.getElementById('hudProgressBar');
+    
+    if (!hud || !marquee || !progress) return;
 
-    if (!metadata || !metadata.title || metadata.status === 'Stopped') {
-        card.classList.add('hidden');
+    if (!metadata || !metadata.title) {
+        // No media playing/active state
+        marquee.textContent = "NO TRACK ACTIVE";
+        progress.style.width = '0%';
         return;
     }
     
-    card.classList.remove('hidden');
-    
-    // Update texts
-    document.getElementById('trackTitle').textContent = metadata.title;
-    document.getElementById('trackArtist').textContent = metadata.artist || 'Unknown Artist';
-    
-    // Update art
-    const artImg = document.getElementById('trackArt');
-    if (metadata.artUrl) {
-        artImg.src = metadata.artUrl;
-        artImg.style.display = 'block';
-    } else {
-        artImg.src = '';
-        artImg.style.display = 'none';
-    }
+    // Format track details: "Artist - Title" with padding and repeats for scroll effect
+    const artist = metadata.artist || 'UNKNOWN ARTIST';
+    const title = metadata.title || 'UNKNOWN TITLE';
+    const trackString = `${artist.toUpperCase()} - ${title.toUpperCase()}   •   `;
+    marquee.textContent = trackString.repeat(3);
     
     // Update progress bar
-    const progress = document.getElementById('trackProgress');
     if (metadata.length > 0) {
         const pct = (metadata.position / metadata.length) * 100;
         progress.style.width = `${Math.min(100, Math.max(0, pct))}%`;
     } else {
         progress.style.width = '0%';
     }
-    
-    updateNowPlayingThemeColors();
 };
 
-function updateNowPlayingThemeColors() {
-    const card = document.getElementById('nowPlayingCard');
-    const title = document.getElementById('trackTitle');
-    const progress = document.getElementById('trackProgress');
-    if (!card || !title || !progress) return;
-    
-    let primaryColor = '#00f0ff';
-    
-    switch (currentTheme) {
-        case 'matrix':
-            primaryColor = '#00ff66';
-            break;
-        case 'neon':
-            primaryColor = '#ff007f';
-            break;
-        case 'volcano':
-            primaryColor = '#ff3300';
-            break;
-        case 'monochrome':
-            primaryColor = '#ffffff';
-            break;
-        case 'cyberpunk':
-        default:
-            primaryColor = '#00f0ff';
-            break;
+function updateHudDisplay() {
+    const hud = document.getElementById('musicHud');
+    const menu = document.getElementById('controlsMenu');
+    if (hud) {
+        // Clear and rebuild class list
+        hud.className = '';
+        hud.classList.add(hudTheme);
+        hud.classList.add(`pos-${currentPosition}`);
+        if (!hudShow) {
+            hud.classList.add('hidden');
+        }
     }
-    
-    card.style.borderColor = `${primaryColor}66`;
-    card.style.boxShadow = `0 0 15px ${primaryColor}20, inset 0 0 10px ${primaryColor}0a`;
-    title.style.color = primaryColor;
-    progress.style.background = primaryColor;
-    progress.style.boxShadow = `0 0 8px ${primaryColor}`;
+    if (menu) {
+        if (hudTheme === 'winamp-classic') {
+            menu.classList.add('winamp-menu');
+        } else {
+            menu.classList.remove('winamp-menu');
+        }
+    }
 }
+
+// Flush audio context buffer periodically (every 10 minutes) to prevent cumulative GStreamer/WebAudio resampler drift/desync
+setInterval(() => {
+    resetAudioContext();
+}, 10 * 60 * 1000);

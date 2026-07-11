@@ -286,92 +286,417 @@ kbd {
     text-transform: uppercase;
 }
 
-/* Now Playing Widget */
-#nowPlayingCard {
+/* Music HUD (Car Stereo LCD Style) */
+#musicHud {
     position: absolute;
-    bottom: 60px;
-    left: 10px;
+    z-index: 98;
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(10, 10, 15, 0.75);
-    border: 1px solid rgba(0, 240, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1), inset 0 0 10px rgba(0, 240, 255, 0.05);
-    border-radius: 12px;
-    padding: 10px;
-    width: 280px;
-    color: white;
-    z-index: 98;
-    backdrop-filter: blur(8px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
-#nowPlayingCard.hidden {
+#musicHud.pos-bottom, #musicHud.pos-top {
+    right: 55px;
+    width: 220px;
+    height: 35px;
+}
+#musicHud.pos-bottom {
+    bottom: 5px;
+}
+#musicHud.pos-top {
+    top: 5px;
+}
+
+#musicHud.pos-left, #musicHud.pos-right {
+    bottom: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    height: 34px;
+}
+
+#musicHud.pos-fullscreen {
+    bottom: 10px;
+    right: 60px;
+    width: 240px;
+    height: 34px;
+}
+
+#musicHud.hidden {
     opacity: 0;
-    transform: translateY(20px);
     pointer-events: none;
 }
 
-.art-container {
-    width: 50px;
-    height: 50px;
-    border-radius: 6px;
+/* LCD Display Screen styling */
+.hud-screen {
+    position: relative;
     overflow: hidden;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2px 6px 4px 6px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
+    border-width: 1px;
+    border-style: solid;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Scanline / Pixel Grid effect Overlay */
+.hud-screen::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+    background-size: 100% 3px, 3px 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.hud-text-container {
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    position: relative;
+    height: 22px;
+    display: flex;
+    align-items: center;
+}
+
+.hud-marquee {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    padding-left: 100%;
+    animation: hud-marquee 12s linear infinite;
+    text-transform: uppercase;
+}
+
+@keyframes hud-marquee {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+.hud-progress-container {
+    width: 100%;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 1px;
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.hud-progress-bar {
+    height: 100%;
+    width: 0%;
+    transition: width 0.25s linear;
+}
+
+/* --- HUD Themes --- */
+
+/* 1. Green LCD */
+#musicHud.green-lcd {
+    background: rgba(5, 15, 5, 0.85);
+    border: 1px solid rgba(0, 255, 0, 0.25);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.15);
+}
+#musicHud.green-lcd .hud-screen {
+    background-color: #031003;
+    border-color: #00ff00;
+}
+#musicHud.green-lcd .hud-marquee {
+    color: #00ff00;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.7);
+}
+#musicHud.green-lcd .hud-progress-bar {
+    background-color: #00ff00;
+    box-shadow: 0 0 6px #00ff00;
+}
+#musicHud.green-lcd .hud-btn:hover {
+    color: #00ff00;
+    border-color: #00ff00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+/* 2. Amber LCD */
+#musicHud.amber-lcd {
+    background: rgba(20, 12, 0, 0.85);
+    border: 1px solid rgba(255, 176, 0, 0.25);
+    box-shadow: 0 0 15px rgba(255, 176, 0, 0.15);
+}
+#musicHud.amber-lcd .hud-screen {
+    background-color: #100a00;
+    border-color: #ffb000;
+}
+#musicHud.amber-lcd .hud-marquee {
+    color: #ffb000;
+    text-shadow: 0 0 4px rgba(255, 176, 0, 0.7);
+}
+#musicHud.amber-lcd .hud-progress-bar {
+    background-color: #ffb000;
+    box-shadow: 0 0 6px #ffb000;
+}
+#musicHud.amber-lcd .hud-btn:hover {
+    color: #ffb000;
+    border-color: #ffb000;
+    box-shadow: 0 0 8px rgba(255, 176, 0, 0.3);
+}
+
+/* 3. Cyberpunk Cyan */
+#musicHud.cyan-neon {
+    background: rgba(0, 10, 15, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+#musicHud.cyan-neon .hud-screen {
+    background-color: #000a10;
+    border-color: #00f0ff;
+}
+#musicHud.cyan-neon .hud-marquee {
+    color: #00f0ff;
+    text-shadow: 0 0 4px rgba(0, 240, 255, 0.7);
+}
+#musicHud.cyan-neon .hud-progress-bar {
+    background-color: #00f0ff;
+    box-shadow: 0 0 6px #00f0ff;
+}
+#musicHud.cyan-neon .hud-btn:hover {
+    color: #00f0ff;
+    border-color: #00f0ff;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+/* 4. Digital Red LED */
+#musicHud.red-led {
+    background: rgba(15, 0, 0, 0.85);
+    border: 1px solid rgba(255, 0, 0, 0.25);
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.15);
+}
+#musicHud.red-led .hud-screen {
+    background-color: #100000;
+    border-color: #ff0000;
+}
+#musicHud.red-led .hud-marquee {
+    color: #ff0000;
+    text-shadow: 0 0 4px rgba(255, 0, 0, 0.7);
+}
+#musicHud.red-led .hud-progress-bar {
+    background-color: #ff0000;
+    box-shadow: 0 0 6px #ff0000;
+}
+#musicHud.red-led .hud-btn:hover {
+    color: #ff0000;
+    border-color: #ff0000;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+}
+
+/* 5. Winamp Classic */
+#musicHud.winamp-classic {
+    background: #282830;
+    border: 2px solid #3e3e48;
+    box-shadow: 
+        inset 1px 1px 0px #5e5e68,
+        inset -1px -1px 0px #1a1a20,
+        0 4px 10px rgba(0,0,0,0.5);
+    padding: 6px 10px;
+}
+#musicHud.winamp-classic .hud-screen {
+    background-color: #0c0d12;
+    border: 1px solid #1a1a20;
+    border-right-color: #5e5e68;
+    border-bottom-color: #5e5e68;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+}
+#musicHud.winamp-classic .hud-marquee {
+    color: #00e600;
+    text-shadow: 0 0 3px rgba(0, 230, 0, 0.5);
+    font-family: 'Courier New', monospace;
+}
+#musicHud.winamp-classic .hud-progress-container {
+    background-color: #08080c;
+    border: 1px solid #1c1c22;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+    height: 4px;
+}
+#musicHud.winamp-classic .hud-progress-bar {
+    background: linear-gradient(90deg, #00b300 0%, #ffff00 70%, #ff1a1a 100%);
+    box-shadow: none;
+}
+
+/* Winamp Classic theme for Controls Menu */
+#controlsMenu.winamp-menu {
+    background: #282830 !important;
+    border: 2px solid #5a5a64 !important;
+    border-top-color: #8e8e9c !important;
+    border-left-color: #8e8e9c !important;
+    border-bottom-color: #1a1a20 !important;
+    border-right-color: #1a1a20 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8) !important;
+    border-radius: 0px !important;
+    padding: 8px !important;
+    font-family: 'Courier New', monospace !important;
+    width: 240px !important;
+}
+
+#controlsMenu.winamp-menu .menu-header {
+    background: linear-gradient(90deg, #08081a 0%, #151532 50%, #08081a 100%) !important;
+    border: 1px solid #000000 !important;
+    padding: 3px 6px !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px !important;
+}
+
+#controlsMenu.winamp-menu .menu-header h3 {
+    font-family: 'Courier New', monospace !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    color: #c2c2d6 !important;
+    text-shadow: 1px 1px #000 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    margin: 0 !important;
+}
+
+#controlsMenu.winamp-menu #helpTrigger {
+    background: linear-gradient(#4d4d5a, #2b2b33) !important;
+    border: 1px solid #000000 !important;
+    border-top-color: #7e7e8c !important;
+    border-left-color: #7e7e8c !important;
+    color: #00ff00 !important;
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 0px !important;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 9px !important;
+    font-weight: bold !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    cursor: pointer !important;
 }
 
-#trackArt {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+#controlsMenu.winamp-menu #helpTrigger:hover {
+    color: #ffffff !important;
 }
 
-.track-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
-    flex-grow: 1;
+#controlsMenu.winamp-menu #helpTrigger:active {
+    border-color: #7e7e8c !important;
+    border-top-color: #000000 !important;
+    border-left-color: #000000 !important;
+    padding-top: 1px !important;
+    padding-left: 1px !important;
 }
 
-#trackTitle {
-    font-size: 12px;
-    font-weight: 700;
-    color: #00f0ff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+#controlsMenu.winamp-menu label {
+    font-family: 'Courier New', monospace !important;
+    font-size: 10px !important;
+    color: #c2c2d6 !important;
+    text-transform: uppercase !important;
+    font-weight: bold !important;
 }
 
-#trackArtist {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.7);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 6px;
+#controlsMenu.winamp-menu select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: #000000 url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2300ff00' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 8px center !important;
+    border: 1.5px solid #000000 !important;
+    border-top-color: #40404a !important;
+    border-left-color: #40404a !important;
+    border-bottom-color: #7e7e8c !important;
+    border-right-color: #7e7e8c !important;
+    color: #00ff00 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    border-radius: 0px !important;
+    width: 120px !important;
+    padding: 3px 20px 3px 6px !important;
+    text-transform: uppercase !important;
+    box-shadow: none !important;
 }
 
-.progress-bar-container {
-    width: 100%;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
+#controlsMenu.winamp-menu select option {
+    background: #0a0a0d !important;
+    color: #00ff00 !important;
 }
 
-#trackProgress {
-    height: 100%;
-    width: 0%;
-    background: #00f0ff;
-    box-shadow: 0 0 8px #00f0ff;
-    transition: width 0.2s linear;
+#controlsMenu.winamp-menu input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: #000000 !important;
+    border: 1px solid #1a1a22 !important;
+    border-top-color: #4d4d5a !important;
+    border-left-color: #4d4d5a !important;
+    border-bottom-color: #7e7e8c !important;
+    border-right-color: #7e7e8c !important;
+    height: 8px !important;
+    width: 120px !important;
+    border-radius: 0px !important;
+}
+
+#controlsMenu.winamp-menu input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 0px !important;
+    background: linear-gradient(#4d4d5a, #2b2b33) !important;
+    border: 1px solid #000000 !important;
+    border-top-color: #7e7e8c !important;
+    border-left-color: #7e7e8c !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transition: none !important;
+}
+
+#controlsMenu.winamp-menu input[type="range"]::-webkit-slider-thumb:hover {
+    background: linear-gradient(#5d5d6c, #3b3b43) !important;
+    transform: none !important;
+}
+
+#controlsMenu.winamp-menu #closeButton {
+    background: linear-gradient(#40404a, #26262b) !important;
+    border: 1.5px solid #000000 !important;
+    border-top-color: #5a5a64 !important;
+    border-left-color: #5a5a64 !important;
+    color: #c2c2d6 !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: bold !important;
+    font-size: 11px !important;
+    border-radius: 0px !important;
+    padding: 6px !important;
+    text-transform: uppercase !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+
+#controlsMenu.winamp-menu #closeButton:hover {
+    color: #00ff00 !important;
+}
+
+#controlsMenu.winamp-menu #closeButton:active {
+    border-color: #7e7e8c !important;
+    border-top-color: #000000 !important;
+    border-left-color: #000000 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8) !important;
+    padding-top: 7px !important;
+    padding-bottom: 5px !important;
+}
+
+#controlsMenu.winamp-menu .device-info {
+    font-family: 'Courier New', monospace !important;
+    font-size: 8px !important;
+    color: #8a8a9d !important;
+    text-transform: uppercase !important;
+    margin-top: 6px !important;
+    margin-bottom: 8px !important;
 }
