@@ -9,8 +9,8 @@ This document contains Mermaid diagrams that describe the architecture and runti
 ```mermaid
 flowchart LR
   WC[Wayland compositor / Desktop]
-  PY[desktop-visualizer.py<br/>(Python + GTK3 + GtkLayerShell)]
-  WV[WebView<br/>(visualizer/index.html + main.js)]
+  PY[desktop-visualizer.py (Python + GTK3 + GtkLayerShell)]
+  WV[WebView (visualizer/index.html + main.js)]
   AUDIO[PulseAudio / PipeWire / ALSA device]
   TOOLS[.ado-core / shell.nix / tests]
 
@@ -52,11 +52,11 @@ sequenceDiagram
 flowchart TB
   SysAudio[System audio output / capture source]
   Pul[PulseAudio / PipeWire]
-  WebCapt[WebKit getUserMedia capture<br/>(MediaStream)]
+  WebCapt[WebKit getUserMedia capture (MediaStream)]
   AudioCtx[AudioContext -> AnalyserNode]
   JS[main.js]
   MAPP[precomputeMappings() / log bin mapping]
-  Canvas[Canvas draw routines<br/>(bars/eq/wave/pulse)]
+  Canvas[Canvas draw routines (bars/eq/wave/pulse)]
 
   SysAudio --> Pul
   Pul --> WebCapt
