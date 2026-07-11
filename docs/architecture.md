@@ -9,10 +9,10 @@ This document contains Mermaid diagrams that describe the architecture and runti
 ```mermaid
 flowchart LR
   WC[Wayland compositor / Desktop]
-  PY[desktop-visualizer.py (Python + GTK3 + GtkLayerShell)]
-  WV[WebView (visualizer/index.html + main.js)]
-  AUDIO[PulseAudio / PipeWire / ALSA device]
-  TOOLS[.ado-core / shell.nix / tests]
+  PY[desktop-visualizer.py\nPython GTK3 GtkLayerShell]
+  WV[WebView\nvisualizer/index.html + main.js]
+  AUDIO[PulseAudio or PipeWire or ALSA device]
+  TOOLS[ADO-Core, shell.nix, tests]
 
   WC --> PY
   PY --> WV
@@ -33,15 +33,14 @@ sequenceDiagram
   participant WebView as WebKit2 WebView
 
   User->>CLI: run with args (--style, --height, --device)
-  CLI->>GTK: create window, set RGBA visual
+  CLI->>GTK: create window and set RGBA visual
   CLI->>GTK: GtkLayerShell.init_for_window()
   CLI->>GTK: make_click_through()
-  CLI->>Thread: start auto_route_audio (daemon)
+  CLI->>Thread: start auto_route_audio daemon
   CLI->>WebView: create WebView & enable media/webaudio
-  WebView->>WebView: load file://.../visualizer/index.html?...
-  GTK->>CLI: connect signals (permission-request, title, size-alloc)
-  CLI->>GTK: window.show_all()
-  CLI->>GTK: Gtk.main()
+  WebView->>WebView: load local visualizer/index.html
+  GTK->>CLI: signals connected (permission-request, title, size-alloc)
+  CLI->>GTK: window.show_all() and Gtk.main()
 ```
 
 ---
@@ -51,12 +50,12 @@ sequenceDiagram
 ```mermaid
 flowchart TB
   SysAudio[System audio output / capture source]
-  Pul[PulseAudio / PipeWire]
+  Pul[PulseAudio or PipeWire]
   WebCapt[WebKit getUserMedia capture (MediaStream)]
   AudioCtx[AudioContext -> AnalyserNode]
   JS[main.js]
-  MAPP[precomputeMappings() / log bin mapping]
-  Canvas[Canvas draw routines (bars/eq/wave/pulse)]
+  MAPP[precomputeMappings / log bin mapping]
+  Canvas[Canvas draw routines (bars, eq, wave, pulse)]
 
   SysAudio --> Pul
   Pul --> WebCapt
@@ -78,13 +77,13 @@ sequenceDiagram
   participant GTK as GTK Window
   participant Cairo as cairo.Region
 
-  JS->>Py: document.title = JSON({action:"menu-toggle"/"menu-resize"/"close"})
-  Py->>Py: on_title_changed() parse JSON
-  alt menu-toggle/menu-resize
+  JS->>Py: document.title = JSON({action: "menu-toggle" / "menu-resize" / "close"})
+  Py->>Py: on_title_changed() parses JSON
+  alt menu-toggle or menu-resize
     Py->>GTK: resize(window, target_height)
     Py->>GTK: set_size_request(...)
     GTK->>Py: size-allocate event
-    Py->>Cairo: build input region (gear rect [+ menu rect if open])
+    Py->>Cairo: build input region (gear rect and menu rect if open)
     Py->>GTK: window.input_shape_combine_region(region)
   else close
     Py->>Py: Gtk.main_quit()
@@ -100,8 +99,8 @@ flowchart LR
   Start([start])
   Loop[loop until timeout (~20s) every 0.5s]
   RunP[call: pactl list source-outputs]
-  Parse[parse blocks for WebKitWebProcess stream]
-  Found{found WebKit stream?}
+  Parse[parse output for WebKitWebProcess source-outputs]
+  Found{Found WebKit stream?}
   Move[call: pactl move-source-output <id> <target_device>]
   Success([exit thread])
   Sleep[sleep 0.5s]
