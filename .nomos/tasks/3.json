@@ -1,8 +1,8 @@
 {
   "key": "3",
   "title": "Resolve Quality Debt: visualizer/main.js",
-  "status": "BACKLOG",
-  "assignee": "markg",
+  "status": "PLAN",
+  "assignee": "swarm:aider",
   "min_tier": 0,
   "engine": "",
   "sequence": 0,
@@ -12,8 +12,12 @@
   ],
   "blocked_by": null,
   "created_at": "2026-07-16T18:34:34.952904171-04:00",
-  "updated_at": "2026-07-16T18:37:29.866269222-04:00",
+  "updated_at": "2026-07-16T18:42:33.778944224-04:00",
   "description": "## 📝 User Story / Description\nAs a developer, I want to resolve the following quality debt items associated with Task 3 to keep the codebase maintainable.\n\n## ✅ Acceptance Criteria\n- [ ] Resolve complexity_limit in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy graphics rendering loops out of scope for current feature)\n- [ ] Resolve churn_complexity in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy graphics rendering loops out of scope for current feature)\n- [ ] Resolve churn_complexity in [desktop-visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/desktop-visualizer.py) (Reason: Legacy file with high churn)\n- [ ] Resolve complexity_limit in [desktop-visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/desktop-visualizer.py) (Reason: Deep if/else chains in legacy dbus event handlers)\n- [ ] Resolve monolithic_file_limit in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy monolithic graphics file)\n\n## 🛠️ Technical Notes\n- Automatically tracked and synchronized by Nomos Quality Debt Manager.\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- **Target Files:**\n  - `[MODIFY] visualizer/main.js`\n  - `[MODIFY] desktop-visualizer.py`\n- **Quality Debt Exemptions:**\n  - `complexity_limit: true`\n  - `churn_complexity: true`\n  - `monolithic_file_limit: true`\n\n## 🤖 Swarm Routing \u0026 Metadata Configuration\n- **Executing Node:** swarm:antigravity\n- **Target Labels:** `agent:swarm:antigravity`\n- **Size / Story Points:** Size:2\n",
+  "comments": [
+    "⚠️  Definition of Done (DoD) verification failed for task 3:\n- Walkthrough Parity Check: walkthrough file not found: /home/markg/Projects/nix-audio-visualizer/.nomos/walkthroughs/3.md. Run 'bin/nomos walkthrough' to generate one.\n    \u001b[1;33m💡 Guidance:\u001b[0m Verify that all Acceptance Criteria in the active task description are covered in the walkthrough.\n\nAI progress is temporarily blocked until these quality gates pass.",
+    "🔍 Ready for Review: Transitioning task 3 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+  ],
   "dor_status": "",
   "dod_status": ""
 }
