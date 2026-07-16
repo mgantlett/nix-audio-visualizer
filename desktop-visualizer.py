@@ -132,74 +132,63 @@ def handle_media_control(cmd):
         except Exception:
             pass
 
+def _handle_menu_toggle(data, window):
+    global menu_open, menu_height
+    menu_open = bool(data.get("open", False))
+    menu_height = int(data.get("menuHeight", 250))
+    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP if menu_open else GtkLayerShell.Layer.BOTTOM)
+    if visualizer_position in ["top", "bottom"]:
+        target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
+        window.set_size_request(0, target_height)
+        window.resize(window.get_size()[0], target_height)
+    window.queue_resize()
+
+def _handle_menu_resize(data, window):
+    global menu_open, menu_height
+    menu_height = int(data.get("menuHeight", 250))
+    if menu_open and visualizer_position in ["bottom", "top"]:
+        target_height = (visualizer_height + menu_height + 15)
+        window.resize(window.get_size()[0], target_height)
+        window.set_size_request(0, target_height)
+    window.queue_resize()
+
 # Handle window title update events
 def on_title_changed(webview, pspec, window):
     """Handle JS-to-Python communication via window title changes."""
-    global menu_open, menu_height
     title = webview.get_title()
-    if not title:
-        return
-        
+    if not title: return
     try:
         data = json.loads(title)
         action = data.get("action")
-        if action == "menu-toggle":
-            menu_open = bool(data.get("open", False))
-            menu_height = int(data.get("menuHeight", 250))
-            # Bring window to front layer when settings menu is open
-            if menu_open:
-                GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP)
-            else:
-                GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
-            # Adjust window size to fit the visualizer or visualizer + menu
-            if visualizer_position in ["top", "bottom"]:
-                target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
-                window.set_size_request(0, target_height)
-                window.resize(window.get_size()[0], target_height)
-            # Re-evaluate the input shape region
-            window.queue_resize()
-        elif action == "menu-resize":
-            menu_height = int(data.get("menuHeight", 250))
-            if menu_open:
-                if visualizer_position in ["bottom", "top"]:
-                    target_height = (visualizer_height + menu_height + 15)
-                    window.resize(window.get_size()[0], target_height)
-                    window.set_size_request(0, target_height)
-                window.queue_resize()
-        elif action == "close":
-            Gtk.main_quit()
-        elif action == "media-control":
-            handle_media_control(data.get("command"))
-    except Exception:
-        pass
+        if action == "menu-toggle": _handle_menu_toggle(data, window)
+        elif action == "menu-resize": _handle_menu_resize(data, window)
+        elif action == "close": Gtk.main_quit()
+        elif action == "media-control": handle_media_control(data.get("command"))
+    except Exception: pass
 
 # Route WebKit recording stream to HDMI
+def _check_and_route_block(block, target_device):
+    if not block.strip(): return False
+    lines = block.split("\n")
+    source_output_id = lines[0].split()[0]
+    is_webkit = any("application.name =" in line and "WebKitWebProcess" in line for line in lines)
+    if is_webkit:
+        print(f"🔊 Auto-routing WebKitWebProcess stream {source_output_id} to {target_device}...", flush=True)
+        import subprocess
+        subprocess.run(["pactl", "move-source-output", source_output_id, target_device], capture_output=True)
+        return True
+    return False
+
 def auto_route_audio(target_device):
     """Periodically check and route the WebKit audio stream to target HDMI monitor."""
-    import subprocess
-    import time
+    import subprocess, time
     print(f"🔊 Auto-routing daemon started. Target: {target_device}", flush=True)
     start_time = time.time()
     while time.time() - start_time < 20: # loop for 20 seconds
         time.sleep(0.5)
         try:
             output = subprocess.check_output(["pactl", "list", "source-outputs"], text=True)
-            blocks = output.split("Source Output #")
-            for block in blocks:
-                if not block.strip():
-                    continue
-                lines = block.split("\n")
-                source_output_id = lines[0].split()[0]
-                
-                is_webkit = False
-                for line in lines:
-                    if "application.name =" in line and "WebKitWebProcess" in line:
-                        is_webkit = True
-                
-                if is_webkit:
-                    print(f"🔊 Auto-routing WebKitWebProcess stream {source_output_id} to {target_device}...", flush=True)
-                    subprocess.run(["pactl", "move-source-output", source_output_id, target_device], capture_output=True)
-                    return
+            if any(_check_and_route_block(b, target_device) for b in output.split("Source Output #")): return
         except Exception:
             pass
 
@@ -209,16 +198,8 @@ def get_mpris_metadata():
     try:
         from gi.repository import Playerctl
         players = Playerctl.list_players()
-        if not players:
-            return None
-        
-        target_name = None
-        for p in players:
-            if "chromium" in p.name or "chrome" in p.name:
-                target_name = p
-                break
-        if not target_name:
-            target_name = players[0]
+        if not players: return None
+        target_name = next((p for p in players if "chromium" in p.name or "chrome" in p.name), players[0])
             
         player = Playerctl.Player.new_from_name(target_name)
         
@@ -255,59 +236,44 @@ def get_mpris_metadata():
             "length": length,
             "position": position
         }
-    except Exception as e:
-        try:
-            output = subprocess.check_output(["playerctl", "-l"], text=True).strip().split()
-            if not output:
-                return None
-            target = None
-            for p in output:
-                if "chromium" in p or "chrome" in p:
-                    target = p
-                    break
-            if not target:
-                target = output[0]
+    except Exception: return _get_fallback_metadata()
+
+def _get_fallback_metadata():
+    try:
+        output = subprocess.check_output(["playerctl", "-l"], text=True).strip().split()
+        if not output: return None
+        target = next((p for p in output if "chromium" in p or "chrome" in p), output[0])
+        
+        title = subprocess.check_output(["playerctl", "-p", target, "metadata", "title"], text=True).strip()
+        artist = subprocess.check_output(["playerctl", "-p", target, "metadata", "artist"], text=True).strip()
+        album = subprocess.check_output(["playerctl", "-p", target, "metadata", "album"], text=True).strip()
+        art_url = subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:artUrl"], text=True).strip()
+        status = subprocess.check_output(["playerctl", "-p", target, "status"], text=True).strip()
+        
+        length = 0
+        try: length = int(subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:length"], text=True).strip())
+        except: pass
+        
+        position = 0
+        try: position = int(subprocess.check_output(["playerctl", "-p", target, "position"], text=True).strip()) * 1000000
+        except: pass
             
-            title = subprocess.check_output(["playerctl", "-p", target, "metadata", "title"], text=True).strip()
-            artist = subprocess.check_output(["playerctl", "-p", target, "metadata", "artist"], text=True).strip()
-            album = subprocess.check_output(["playerctl", "-p", target, "metadata", "album"], text=True).strip()
-            art_url = subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:artUrl"], text=True).strip()
-            status = subprocess.check_output(["playerctl", "-p", target, "status"], text=True).strip()
-            
-            try:
-                length = int(subprocess.check_output(["playerctl", "-p", target, "metadata", "mpris:length"], text=True).strip())
-            except:
-                length = 0
-            try:
-                position = int(subprocess.check_output(["playerctl", "-p", target, "position"], text=True).strip()) * 1000000
-            except:
-                position = 0
-                
-            return {
-                "title": title,
-                "artist": artist,
-                "album": album,
-                "artUrl": art_url,
-                "status": status,
-                "length": length,
-                "position": position
-            }
-        except Exception:
-            return None
+        return {
+            "title": title, "artist": artist, "album": album, "artUrl": art_url,
+            "status": status, "length": length, "position": position
+        }
+    except Exception:
+        return None
 
 # Safely execute javascript code avoiding WebKit deprecation warnings
 def run_js(webview, js_code):
     """Safely execute javascript code avoiding deprecation warnings in WebKit."""
-    try:
-        webview.evaluate_javascript(js_code, -1, None, None, None, None)
-    except Exception:
-        try:
-            webview.evaluate_javascript(js_code, -1, None, None, None)
-        except Exception:
-            try:
-                webview.run_javascript(js_code, None, None, None)
-            except Exception:
-                pass
+    try: webview.evaluate_javascript(js_code, -1, None, None, None, None); return
+    except Exception: pass
+    try: webview.evaluate_javascript(js_code, -1, None, None, None); return
+    except Exception: pass
+    try: webview.run_javascript(js_code, None, None, None); return
+    except Exception: pass
 
 # Push current MPRIS metadata updates to visualizer web frame
 def update_mpris_metadata(webview):
@@ -366,8 +332,7 @@ def listen_ipc(webview, window):
         while True:
             conn, _ = server.accept()
             data = conn.recv(1024).decode('utf-8').strip()
-            if data:
-                GLib.idle_add(handle_ipc_command, data, webview, window)
+            if data: GLib.idle_add(handle_ipc_command, data, webview, window)
             conn.close()
     except Exception as e:
         pass
@@ -376,7 +341,7 @@ def listen_ipc(webview, window):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Wayland desktop background audio visualizer.")
-    parser.add_argument("--style", choices=["bars", "eq", "wave", "pulse", "vu", "waterfall", "ribbon", "particles"], default="bars", help="Visualization style")
+    parser.add_argument("--style", default="bars", help="Visualization style")
     parser.add_argument("--height", type=int, default=45, help="Visualizer height/width in pixels")
     parser.add_argument("--device", default="alsa_output.pci-0000_01_00.1.hdmi-surround71.monitor", help="PulseAudio/PipeWire capture source device name")
     parser.add_argument("--position", choices=["bottom", "top", "left", "right", "fullscreen"], default="bottom", help="Screen edge position")
@@ -469,6 +434,10 @@ def main():
     settings = webview.get_settings()
     settings.set_enable_write_console_messages_to_stdout(True)
     settings.set_enable_media_stream(True)
+    
+    # Allow loading local ES6 modules via file:// scheme
+    settings.set_allow_file_access_from_file_urls(True)
+    settings.set_allow_universal_access_from_file_urls(True)
     
     # Transparent web view background
     bg_color = Gdk.RGBA()

@@ -1,44 +1,28 @@
 {
   "active_debt": [
     {
-      "file": "visualizer/main.js",
-      "gate": "complexity_limit",
-      "reason": "Legacy graphics rendering loops out of scope for current feature",
-      "linked_task": "3",
-      "created_at": "2026-07-16T18:30:00-04:00",
-      "expires_at": "2027-01-01T00:00:00Z"
-    },
-    {
-      "file": "visualizer/main.js",
-      "gate": "churn_complexity",
-      "reason": "Legacy graphics rendering loops out of scope for current feature",
-      "linked_task": "3",
-      "created_at": "2026-07-16T18:30:00-04:00",
-      "expires_at": "2027-01-01T00:00:00Z"
+      "file": "visualizer/rendering.js",
+      "gate": "refactor",
+      "reason": "Stylistic duplication in peak hold logic",
+      "linked_task": "4",
+      "created_at": "2026-07-16T00:00:00Z",
+      "expires_at": "2027-07-16T00:00:00Z"
     },
     {
       "file": "desktop-visualizer.py",
-      "gate": "churn_complexity",
-      "reason": "Legacy file with high churn",
-      "linked_task": "3",
-      "created_at": "2026-07-16T18:30:00-04:00",
-      "expires_at": "2027-01-01T00:00:00Z"
+      "gate": "complexity",
+      "reason": "Legacy structure requires nesting",
+      "linked_task": "4",
+      "created_at": "2026-07-16T00:00:00Z",
+      "expires_at": "2027-07-16T00:00:00Z"
     },
     {
       "file": "desktop-visualizer.py",
-      "gate": "complexity_limit",
-      "reason": "Deep if/else chains in legacy dbus event handlers",
-      "linked_task": "3",
-      "created_at": "2026-07-16T18:30:00-04:00",
-      "expires_at": "2027-01-01T00:00:00Z"
-    },
-    {
-      "file": "visualizer/main.js",
-      "gate": "monolithic_file_limit",
-      "reason": "Legacy monolithic graphics file",
-      "linked_task": "3",
-      "created_at": "2026-07-16T18:30:00-04:00",
-      "expires_at": "2027-01-01T00:00:00Z"
+      "gate": "churn",
+      "reason": "Needed to add CORS fix",
+      "linked_task": "4",
+      "created_at": "2026-07-16T00:00:00Z",
+      "expires_at": "2027-07-16T00:00:00Z"
     }
   ]
 }

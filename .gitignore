@@ -19,3 +19,4 @@ __pycache__/
 .direnv/
 .envrc
 .nomos/cache.db*
+.nomos/*.db*
