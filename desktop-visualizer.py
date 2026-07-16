@@ -20,7 +20,7 @@ try:
 except Exception:
     pass
 
-from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2, GLib
+from gi.repository import Gtk, Gdk, GtkLayerShell, WebKit2, GLib, Gio
 
 # Handle WebKitGTK permission requests
 def on_permission_decision(web_view, decision):
@@ -30,6 +30,19 @@ def on_permission_decision(web_view, decision):
             decision.allow()
             return True
     return False
+
+def inhibit_sleep():
+    """Inhibit the screensaver via DBus while the visualizer is running."""
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
+                                       "org.freedesktop.ScreenSaver",
+                                       "/org/freedesktop/ScreenSaver",
+                                       "org.freedesktop.ScreenSaver", None)
+        cookie = proxy.call_sync("Inhibit", GLib.Variant("(ss)", ("Nix Audio Visualizer", "Visualizer is running")), Gio.DBusCallFlags.NONE, -1, None)
+        print(f"Screensaver inhibited (cookie: {cookie.unpack()[0]})")
+    except Exception as e:
+        print(f"Failed to inhibit screensaver via DBus: {e}")
 
 # State track for controls popup
 menu_open = False
@@ -103,11 +116,11 @@ def on_title_changed(webview, pspec, window):
                     GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP)
                 else:
                     GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
-                # Adjust Gtk window height dynamically only for bottom and top positions
-                if visualizer_position in ["bottom", "top"]:
+                # Adjust window size to fit the visualizer or visualizer + menu
+                if visualizer_position in ["top", "bottom"]:
                     target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
-                    window.resize(window.get_size()[0], target_height)
                     window.set_size_request(0, target_height)
+                    window.resize(window.get_size()[0], target_height)
                 # Re-evaluate the input shape region
                 window.queue_resize()
             elif action == "menu-resize":
@@ -423,13 +436,13 @@ def main():
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, False)
-        window.set_size_request(250, 0)
+        window.set_size_request(args.height, 0)
     elif args.position == "right":
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, False)
-        window.set_size_request(250, 0)
+        window.set_size_request(args.height, 0)
     elif args.position == "fullscreen":
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.LEFT, True)
         GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.RIGHT, True)
@@ -476,6 +489,7 @@ def main():
 
     window.add(webview)
     window.show_all()
+    inhibit_sleep()
     Gtk.main()
 
 

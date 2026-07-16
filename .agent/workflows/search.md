@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/search.md
+../../.nomos-commons/.agent/workflows/search.md

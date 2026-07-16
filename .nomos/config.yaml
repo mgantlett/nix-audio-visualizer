@@ -1,0 +1,4 @@
+
+env: development
+task_repo: mgantlett/nomos-commons
+db_path: .nomos/cache.db

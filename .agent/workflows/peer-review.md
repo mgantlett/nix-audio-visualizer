@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/peer-review.md
+../../.nomos-commons/.agent/workflows/peer-review.md

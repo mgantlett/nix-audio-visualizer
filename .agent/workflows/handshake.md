@@ -1,0 +1,1 @@
+../../.nomos-commons/.agent/workflows/handshake.md

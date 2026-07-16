@@ -1,1 +1,0 @@
-../../.ado-core/.agent/workflows/contract.md

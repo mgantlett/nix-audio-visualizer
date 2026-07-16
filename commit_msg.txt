@@ -1,0 +1,1 @@
+chore: transition to Nomos OS, implement Digital VFD visualizer, and add DBus sleep inhibition

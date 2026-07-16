@@ -1,0 +1,3 @@
+[submodule ".nomos-commons"]
+	path = .nomos-commons
+	url = git@github.com:mgantlett/nomos-commons.git

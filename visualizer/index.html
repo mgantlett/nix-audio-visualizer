@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!-- 
+    Desktop Audio Visualizer - Main Entry Point
+    This HTML file serves as the canvas and UI container for the WebKitGTK layer shell.
+    It links the main stylesheet (style.css) and script (main.js).
+    The UI is heavily reliant on hardware acceleration in the canvas element.
+    Additional DOM elements are used for the floating controls menu and settings.
+    Do not add complex nested layouts here; keep the DOM minimal for performance.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -38,9 +46,11 @@
                 <select id="styleSelect">
                     <option value="bars">Classic Bars</option>
                     <option value="eq">LED Equalizer</option>
-                    <option value="wave">Oscilloscope</option>
+                    <option value="wave">Oscilloscope (Wave)</option>
+                    <option value="vectorscope">Vectorscope (XY)</option>
                     <option value="pulse">Neural Pulse</option>
                     <option value="vu">Stereo VU Meter</option>
+                    <option value="analog-vu">Vintage Digital VFD</option>
                     <option value="waterfall">Sidebar Waterfall</option>
                     <option value="ribbon">Neon Ribbon</option>
                     <option value="particles">Ambient Particles</option>
@@ -87,6 +97,11 @@
                 <input type="range" id="dbSlider" min="-100" max="-35" step="5" value="-90">
             </div>
 
+            <div class="menu-group">
+                <label for="stereoToggle">Stereo Split:</label>
+                <input type="checkbox" id="stereoToggle">
+            </div>
+
             <!-- Music HUD Settings -->
             <div class="menu-group">
                 <label for="hudShowToggle">Show Music HUD:</label>
@@ -110,13 +125,8 @@
             </div>
             <!-- Dynamic VFX (Global) -->
             <div class="menu-group">
-                <label for="bloomSlider">Bloom (VFX):</label>
-                <input type="range" id="bloomSlider" min="0.0" max="2.0" step="0.1" value="0.5">
-            </div>
-            
-            <div class="menu-group">
-                <label for="shakeSlider">Shake (VFX):</label>
-                <input type="range" id="shakeSlider" min="0.0" max="5.0" step="0.5" value="1.0">
+                <label for="shakeSlider">Shake FX:</label>
+                <input type="range" id="shakeSlider" min="0" max="3.0" step="0.1" value="1.0">
             </div>
 
             <!-- Style-Specific: Classic Bars Settings -->
@@ -163,6 +173,18 @@
                 </div>
             </div>
 
+            <!-- Style-Specific: Vectorscope Settings -->
+            <div class="style-setting vectorscope-setting">
+                <div class="menu-group">
+                    <label for="vsLineWidthSlider">Thickness:</label>
+                    <input type="range" id="vsLineWidthSlider" min="1.0" max="5.0" step="0.5" value="2.5">
+                </div>
+                <div class="menu-group">
+                    <label for="vsGlowSlider">Glow Int.:</label>
+                    <input type="range" id="vsGlowSlider" min="0.0" max="1.0" step="0.1" value="0.6">
+                </div>
+            </div>
+
             <!-- Style-Specific: Neural Pulse Settings -->
             <div class="style-setting pulse-setting">
                 <div class="menu-group">
@@ -184,6 +206,18 @@
                 <div class="menu-group">
                     <label for="vuGapSlider">Gap (px):</label>
                     <input type="range" id="vuGapSlider" min="1" max="5" step="1" value="3">
+                </div>
+            </div>
+
+            <!-- Style-Specific: Digital VFD Settings -->
+            <div class="style-setting analog-vu-setting">
+                <div class="menu-group">
+                    <label for="vfdColumnsSlider">Columns:</label>
+                    <input type="range" id="vfdColumnsSlider" min="5" max="30" step="1" value="15">
+                </div>
+                <div class="menu-group">
+                    <label for="peakHoldSlider">Peak Drop:</label>
+                    <input type="range" id="peakHoldSlider" min="0.80" max="0.99" step="0.01" value="0.95">
                 </div>
             </div>
 

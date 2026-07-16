@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/deep-review.md
+../../.nomos-commons/.agent/workflows/deep-review.md

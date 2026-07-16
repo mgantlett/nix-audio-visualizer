@@ -1,1 +1,0 @@
-../../.ado-core/.agent/workflows/commit.md

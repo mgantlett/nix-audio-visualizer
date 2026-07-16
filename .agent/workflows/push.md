@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/push.md
+../../.nomos-commons/.agent/workflows/push.md
