@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/refresh-os.md
+../../.nomos-commons/.agent/workflows/refresh-os.md

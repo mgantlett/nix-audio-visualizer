@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/spike.md
+../../.nomos-commons/.agent/workflows/spike.md

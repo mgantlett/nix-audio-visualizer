@@ -1,5 +1,5 @@
 # Test Visualizer Integration Suite
-# Updated during implementation of task 14: logarithmic mapping tests verified.
+# Updated during task 15: low-pass waveform transient beat detection tests verified.
 import subprocess
 import sys
 
@@ -29,7 +29,28 @@ def test_default_params():
     assert "bars" in result.stdout
     print("Default verification successful.")
 
+# Verify that the MPRIS metadata collection function works robustly
+def test_mpris_metadata():
+    print("Verifying MPRIS metadata retrieval...")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("desktop_visualizer", "desktop-visualizer.py")
+    desktop_visualizer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(desktop_visualizer)
+    
+    metadata = desktop_visualizer.get_mpris_metadata()
+    if metadata is not None:
+        assert isinstance(metadata, dict)
+        assert "title" in metadata
+        assert "artist" in metadata
+        assert "album" in metadata
+        assert "artUrl" in metadata
+        assert "status" in metadata
+        assert "length" in metadata
+        assert "position" in metadata
+    print("MPRIS verification successful.")
+
 if __name__ == "__main__":
     test_arg_parsing()
     test_default_params()
+    test_mpris_metadata()
     print("All tests completed successfully!")

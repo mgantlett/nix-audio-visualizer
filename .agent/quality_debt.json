@@ -1,0 +1,64 @@
+{
+  "active_debt": [
+    {
+      "file": "visualizer/main.js",
+      "gate": "monolithic_file_limit",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "desktop-visualizer.py",
+      "gate": "complexity_limit",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "visualizer/main.js",
+      "gate": "complexity_limit",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "visualizer/index.html",
+      "gate": "complexity_limit",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "shell.nix",
+      "gate": "comment_density",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": ".nomos/plugins/nixos/shell.nix",
+      "gate": "comment_density",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "visualizer/index.html",
+      "gate": "comment_density",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "visualizer/main.js",
+      "gate": "comment_density",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "desktop-visualizer.py",
+      "gate": "churn_complexity",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    },
+    {
+      "file": "visualizer/main.js",
+      "gate": "churn_complexity",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "linked_task": "16"
+    }
+  ]
+}

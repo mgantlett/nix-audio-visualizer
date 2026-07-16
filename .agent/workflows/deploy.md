@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/deploy.md
+../../.nomos-commons/.agent/workflows/deploy.md

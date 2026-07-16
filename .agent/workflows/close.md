@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/close.md
+../../.nomos-commons/.agent/workflows/close.md

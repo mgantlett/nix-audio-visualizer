@@ -18,3 +18,4 @@ __pycache__/
 # Local envrc / direnv
 .direnv/
 .envrc
+.nomos/cache.db*

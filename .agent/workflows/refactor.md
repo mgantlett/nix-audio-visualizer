@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/refactor.md
+../../.nomos-commons/.agent/workflows/refactor.md

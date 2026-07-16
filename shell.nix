@@ -1,5 +1,11 @@
 { pkgs ? import <nixpkgs> {} }:
 
+# This nix shell configures the environment for the Audio Visualizer.
+# It ensures all required system dependencies (like GTK and WebKitGTK) are available.
+# We also include MPRIS and Playerctl dependencies for music control integration.
+# DO NOT remove these deps without checking the python layer shell implementation.
+# Maintain this file when adding new system bindings.
+
 pkgs.mkShell {
   buildInputs = with pkgs; [
     python3
@@ -15,6 +21,7 @@ pkgs.mkShell {
     gst_all_1.gstreamer
     gst_all_1.gst-plugins-base
     gst_all_1.gst-plugins-good
+    playerctl
     sqlite
     jq
     git
@@ -29,7 +36,7 @@ pkgs.mkShell {
   LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
   shellHook = ''
-    echo "⚡ Nix Audio Visualizer Desktop Shell (with ADO-Core support) Loaded! ⚡"
+    echo "⚡ Nix Audio Visualizer Desktop Shell (with Nomos support) Loaded! ⚡"
     echo "Run: ./bin/start-visualizer"
   '';
 

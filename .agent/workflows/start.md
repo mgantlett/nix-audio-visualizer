@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/start.md
+../../.nomos-commons/.agent/workflows/start.md

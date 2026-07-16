@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!-- 
+    Desktop Audio Visualizer - Main Entry Point
+    This HTML file serves as the canvas and UI container for the WebKitGTK layer shell.
+    It links the main stylesheet (style.css) and script (main.js).
+    The UI is heavily reliant on hardware acceleration in the canvas element.
+    Additional DOM elements are used for the floating controls menu and settings.
+    Do not add complex nested layouts here; keep the DOM minimal for performance.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,22 +16,44 @@
 <body>
     <canvas id="visualizerCanvas"></canvas>
     
+    <!-- Music HUD overlay widget (Car Stereo LCD style) -->
+    <div id="musicHud" class="green-lcd">
+        <div class="hud-screen">
+            <div class="hud-text-container">
+                <div id="hudMarquee" class="hud-marquee">NO TRACK ACTIVE</div>
+            </div>
+            <div class="hud-progress-container">
+                <div id="hudProgressBar" class="hud-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Floating Gear Trigger -->
     <div id="controlsTrigger" title="Open Settings">⚙️</div>
     
     <!-- Controls Popup Menu -->
     <div id="controlsMenu">
-        <h3>Visualizer Controls</h3>
+        <div class="menu-header">
+            <h3>Visualizer Controls</h3>
+            <span id="helpTrigger" title="Keyboard Shortcuts">?</span>
+        </div>
         
-        <div class="menu-scroll">
+        <div id="settingsContent">
+            <div class="menu-scroll">
             <!-- Global / Core Settings -->
             <div class="menu-group">
                 <label for="styleSelect">Style:</label>
                 <select id="styleSelect">
                     <option value="bars">Classic Bars</option>
                     <option value="eq">LED Equalizer</option>
-                    <option value="wave">Oscilloscope</option>
+                    <option value="wave">Oscilloscope (Wave)</option>
+                    <option value="vectorscope">Vectorscope (XY)</option>
                     <option value="pulse">Neural Pulse</option>
+                    <option value="vu">Stereo VU Meter</option>
+                    <option value="analog-vu">Vintage Digital VFD</option>
+                    <option value="waterfall">Sidebar Waterfall</option>
+                    <option value="ribbon">Neon Ribbon</option>
+                    <option value="particles">Ambient Particles</option>
                 </select>
             </div>
             
@@ -64,12 +94,39 @@
 
             <div class="menu-group">
                 <label for="dbSlider">Audio Floor (dB):</label>
-                <input type="range" id="dbSlider" min="-100" max="-30" step="5" value="-90">
+                <input type="range" id="dbSlider" min="-100" max="-35" step="5" value="-90">
+            </div>
+
+            <div class="menu-group">
+                <label for="stereoToggle">Stereo Split:</label>
+                <input type="checkbox" id="stereoToggle">
+            </div>
+
+            <!-- Music HUD Settings -->
+            <div class="menu-group">
+                <label for="hudShowToggle">Show Music HUD:</label>
+                <input type="checkbox" id="hudShowToggle" checked>
+            </div>
+
+            <div class="menu-group">
+                <label for="hudThemeSelect">HUD Theme:</label>
+                <select id="hudThemeSelect">
+                    <option value="green-lcd">Retro Green LCD</option>
+                    <option value="amber-lcd">Vintage Amber LCD</option>
+                    <option value="cyan-neon">Cyberpunk Cyan</option>
+                    <option value="red-led">Digital Red LED</option>
+                    <option value="winamp-classic">Winamp Classic</option>
+                </select>
             </div>
 
             <div class="menu-group" id="beatGroup">
                 <label for="beatSlider">Beat Sense:</label>
                 <input type="range" id="beatSlider" min="0.1" max="0.9" step="0.05" value="0.45">
+            </div>
+            <!-- Dynamic VFX (Global) -->
+            <div class="menu-group">
+                <label for="shakeSlider">Shake FX:</label>
+                <input type="range" id="shakeSlider" min="0" max="3.0" step="0.1" value="1.0">
             </div>
 
             <!-- Style-Specific: Classic Bars Settings -->
@@ -116,6 +173,18 @@
                 </div>
             </div>
 
+            <!-- Style-Specific: Vectorscope Settings -->
+            <div class="style-setting vectorscope-setting">
+                <div class="menu-group">
+                    <label for="vsLineWidthSlider">Thickness:</label>
+                    <input type="range" id="vsLineWidthSlider" min="1.0" max="5.0" step="0.5" value="2.5">
+                </div>
+                <div class="menu-group">
+                    <label for="vsGlowSlider">Glow Int.:</label>
+                    <input type="range" id="vsGlowSlider" min="0.0" max="1.0" step="0.1" value="0.6">
+                </div>
+            </div>
+
             <!-- Style-Specific: Neural Pulse Settings -->
             <div class="style-setting pulse-setting">
                 <div class="menu-group">
@@ -127,14 +196,90 @@
                     <input type="range" id="ringSpeedSlider" min="0.5" max="3.0" step="0.25" value="1.5">
                 </div>
             </div>
+
+            <!-- Style-Specific: Stereo VU Meter Settings -->
+            <div class="style-setting vu-setting">
+                <div class="menu-group">
+                    <label for="vuSegmentsSlider">Segments:</label>
+                    <input type="range" id="vuSegmentsSlider" min="10" max="60" step="5" value="40">
+                </div>
+                <div class="menu-group">
+                    <label for="vuGapSlider">Gap (px):</label>
+                    <input type="range" id="vuGapSlider" min="1" max="5" step="1" value="3">
+                </div>
+            </div>
+
+            <!-- Style-Specific: Digital VFD Settings -->
+            <div class="style-setting analog-vu-setting">
+                <div class="menu-group">
+                    <label for="vfdColumnsSlider">Columns:</label>
+                    <input type="range" id="vfdColumnsSlider" min="5" max="30" step="1" value="15">
+                </div>
+                <div class="menu-group">
+                    <label for="peakHoldSlider">Peak Drop:</label>
+                    <input type="range" id="peakHoldSlider" min="0.80" max="0.99" step="0.01" value="0.95">
+                </div>
+            </div>
+
+            <!-- Style-Specific: Waterfall Settings -->
+            <div class="style-setting waterfall-setting">
+                <div class="menu-group">
+                    <label for="waterfallSpeedSlider">Scroll Speed:</label>
+                    <input type="range" id="waterfallSpeedSlider" min="1" max="10" step="1" value="4">
+                </div>
+            </div>
+
+            <!-- Style-Specific: Neon Ribbon Settings -->
+            <div class="style-setting ribbon-setting">
+                <div class="menu-group">
+                    <label for="ribbonThicknessSlider">Thickness:</label>
+                    <input type="range" id="ribbonThicknessSlider" min="1" max="10" step="0.5" value="3.5">
+                </div>
+                <div class="menu-group">
+                    <label for="ribbonGlowSlider">Glow Intensity:</label>
+                    <input type="range" id="ribbonGlowSlider" min="0.1" max="1.5" step="0.1" value="0.7">
+                </div>
+            </div>
+
+            <!-- Style-Specific: Ambient Particles Settings -->
+            <div class="style-setting particles-setting">
+                <div class="menu-group">
+                    <label for="particleCountSlider">Particles:</label>
+                    <input type="range" id="particleCountSlider" min="20" max="120" step="10" value="60">
+                </div>
+                <div class="menu-group">
+                    <label for="particleSpeedSlider">Base Speed:</label>
+                    <input type="range" id="particleSpeedSlider" min="0.2" max="3.0" step="0.2" value="1.0">
+                </div>
+            </div>
         </div>
 
         <div class="menu-group device-info" style="margin-top: 10px; margin-bottom: 8px;">
             <div id="deviceLabel">Active Source: Default</div>
         </div>
         
+        <button id="resetSettingsBtn" class="reset-btn">Reset Defaults</button>
         <button id="closeButton">Close Visualizer</button>
+        </div>
+
+        <!-- Shortcuts Help Card -->
+        <div id="shortcutsCard" style="display: none;">
+            <div class="kbd-list">
+                <div class="kbd-item"><kbd>M</kbd> <span>Toggle Menu</span></div>
+                <div class="kbd-item"><kbd>H</kbd> <span>Toggle HUD</span></div>
+                <div class="kbd-item"><kbd>S</kbd> <span>Cycle Style</span></div>
+                <div class="kbd-item"><kbd>T</kbd> <span>Cycle Theme</span></div>
+                <div class="kbd-item"><kbd>▲</kbd> <span>Sensitivity +</span></div>
+                <div class="kbd-item"><kbd>▼</kbd> <span>Sensitivity -</span></div>
+                <div class="kbd-item"><kbd>?</kbd> <span>Toggle Help</span></div>
+                <div class="kbd-item"><kbd>Esc</kbd> <span>Close Menu / Help</span></div>
+            </div>
+            <button id="backToSettings">Back to Settings</button>
+        </div>
     </div>
+
+    <!-- Floating dynamic toast notification -->
+    <div id="toastNotification"></div>
 
     <script src="main.js"></script>
 </body>

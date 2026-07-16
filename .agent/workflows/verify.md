@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/verify.md
+../../.nomos-commons/.agent/workflows/verify.md

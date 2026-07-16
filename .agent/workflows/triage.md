@@ -1,1 +1,1 @@
-../../.ado-core/.agent/workflows/triage.md
+../../.nomos-commons/.agent/workflows/triage.md
