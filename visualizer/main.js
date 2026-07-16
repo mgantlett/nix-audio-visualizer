@@ -473,43 +473,44 @@ resizeCanvas();
 // Initial background clear
 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+function renderVerticalBars(arr, yOffset, isMirrored, height, width) {
+    const bars = barsCount;
+    const step = Math.ceil(dataArray.length / bars);
+    const barHeight = (isStereo ? height / 2 : height) / bars;
+    for (let i = 0; i < bars; i++) {
+        const mapping = barBinMappings[i] || { start: i * step, end: (i + 1) * step };
+        let sum = 0;
+        let count = 0;
+        for (let j = mapping.start; j <= mapping.end; j++) {
+            sum += arr[j] || 0;
+            count++;
+        }
+        const average = count > 0 ? sum / count : 0;
+        const val = (average / 255.0) * sensitivityMultiplier;
+        const maxBarWidth = visThickness;
+        const currentBarWidth = Math.min(maxBarWidth, val * maxBarWidth);
+
+        const y = yOffset + (isMirrored ? ((bars - 1 - i) * barHeight) : (i * barHeight));
+        const x = isLeft ? 0 : width - currentBarWidth;
+
+        ctx.fillStyle = getThemeColor(i / bars, 0.5, 1.0);
+        ctx.fillRect(x, y + barGap / 2, currentBarWidth, barHeight - barGap);
+    }
+}
+
 // ─── Style 1: Classic Bars ─────────────────────────
 function drawBars(width, height) {
     if (!barBinMappings || barBinMappings.length !== barsCount) {
         precomputeMappings();
     }
     const bars = barsCount;
-    const step = Math.ceil(dataArray.length / bars);
 
     if (isVertical) {
-        const barHeight = (isStereo ? height / 2 : height) / bars;
-        const renderVerticalBars = (arr, yOffset, isMirrored) => {
-            for (let i = 0; i < bars; i++) {
-                const mapping = barBinMappings[i] || { start: i * step, end: (i + 1) * step };
-                let sum = 0;
-                let count = 0;
-                for (let j = mapping.start; j <= mapping.end; j++) {
-                    sum += arr[j] || 0;
-                    count++;
-                }
-                const average = count > 0 ? sum / count : 0;
-                const val = (average / 255.0) * sensitivityMultiplier;
-                const maxBarWidth = visThickness;
-                const currentBarWidth = Math.min(maxBarWidth, val * maxBarWidth);
-
-                const y = yOffset + (isMirrored ? ((bars - 1 - i) * barHeight) : (i * barHeight));
-                const x = isLeft ? 0 : width - currentBarWidth;
-
-                ctx.fillStyle = getThemeColor(i / bars, 0.5, 1.0);
-                ctx.fillRect(x, y + barGap / 2, currentBarWidth, barHeight - barGap);
-            }
-        };
-
         if (isStereo && dataArrayL && dataArrayR) {
-            renderVerticalBars(dataArrayL, 0, true);
-            renderVerticalBars(dataArrayR, height / 2, false);
+            renderVerticalBars(dataArrayL, 0, true, height, width);
+            renderVerticalBars(dataArrayR, height / 2, false, height, width);
         } else {
-            renderVerticalBars(dataArray, 0, false);
+            renderVerticalBars(dataArray, 0, false, height, width);
         }
         return;
     }
@@ -635,43 +636,47 @@ function drawEqualizer(width, height) {
             const x = xOffset + drawI * colWidth + gap / 2;
             const w = colWidth - gap;
 
+function renderEQSegment(x, y, w, s, litSegments, segRatio, segmentHeight, i, columns) {
+    const isLit = s < litSegments;
+    if (!isLit) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+        ctx.fillRect(x, y, w, segmentHeight);
+        return;
+    }
+
+    const brightness = 0.7 + (s === litSegments - 1 ? 0.3 : 0);
+    if (currentTheme === 'cyberpunk') {
+        let r, g, b;
+        if (segRatio < 0.5) {
+            const t = segRatio / 0.5;
+            r = Math.round(t * 255); g = 255; b = 0;
+        } else if (segRatio < 0.75) {
+            const t = (segRatio - 0.5) / 0.25;
+            r = 255; g = Math.round(255 - t * 100); b = 0;
+        } else {
+            const t = (segRatio - 0.75) / 0.25;
+            r = 255; g = Math.round(155 - t * 155); b = 0;
+        }
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${brightness})`;
+        ctx.fillRect(x, y, w, segmentHeight);
+        if (s === litSegments - 1 && segRatio > 0.6) {
+            ctx.fillStyle = `rgba(${r}, ${g}, 0, 0.3)`;
+            ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
+        }
+    } else {
+        ctx.fillStyle = getThemeColor(i / columns, segRatio, brightness);
+        ctx.fillRect(x, y, w, segmentHeight);
+        if (s === litSegments - 1 && segRatio > 0.6) {
+            ctx.fillStyle = getThemeColor(i / columns, segRatio, 0.3);
+            ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
+        }
+    }
+}
+
             for (let s = 0; s < totalSegments; s++) {
                 const y = height - (s + 1) * (segmentHeight + segmentGap);
-                const isLit = s < litSegments;
                 const segRatio = s / totalSegments;
-
-                if (isLit) {
-                    const brightness = 0.7 + (s === litSegments - 1 ? 0.3 : 0);
-                    if (currentTheme === 'cyberpunk') {
-                        let r, g, b;
-                        if (segRatio < 0.5) {
-                            const t = segRatio / 0.5;
-                            r = Math.round(t * 255); g = 255; b = 0;
-                        } else if (segRatio < 0.75) {
-                            const t = (segRatio - 0.5) / 0.25;
-                            r = 255; g = Math.round(255 - t * 100); b = 0;
-                        } else {
-                            const t = (segRatio - 0.75) / 0.25;
-                            r = 255; g = Math.round(155 - t * 155); b = 0;
-                        }
-                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${brightness})`;
-                        ctx.fillRect(x, y, w, segmentHeight);
-                        if (s === litSegments - 1 && segRatio > 0.6) {
-                            ctx.fillStyle = `rgba(${r}, ${g}, 0, 0.3)`;
-                            ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
-                        }
-                    } else {
-                        ctx.fillStyle = getThemeColor(i / columns, segRatio, brightness);
-                        ctx.fillRect(x, y, w, segmentHeight);
-                        if (s === litSegments - 1 && segRatio > 0.6) {
-                            ctx.fillStyle = getThemeColor(i / columns, segRatio, 0.3);
-                            ctx.fillRect(x - 1, y - 1, w + 2, segmentHeight + 2);
-                        }
-                    }
-                } else {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-                    ctx.fillRect(x, y, w, segmentHeight);
-                }
+                renderEQSegment(x, y, w, s, litSegments, segRatio, segmentHeight, i, columns);
             }
         }
     };

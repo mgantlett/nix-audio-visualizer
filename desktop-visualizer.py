@@ -35,10 +35,12 @@ def inhibit_sleep():
     """Inhibit the screensaver via DBus while the visualizer is running."""
     try:
         bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-        proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
-                                       "org.freedesktop.ScreenSaver",
-                                       "/org/freedesktop/ScreenSaver",
-                                       "org.freedesktop.ScreenSaver", None)
+        proxy = Gio.DBusProxy.new_sync(
+            bus, Gio.DBusProxyFlags.NONE, None,
+            "org.freedesktop.ScreenSaver",
+            "/org/freedesktop/ScreenSaver",
+            "org.freedesktop.ScreenSaver", None
+        )
         cookie = proxy.call_sync("Inhibit", GLib.Variant("(ss)", ("Nix Audio Visualizer", "Visualizer is running")), Gio.DBusCallFlags.NONE, -1, None)
         print(f"Screensaver inhibited (cookie: {cookie.unpack()[0]})")
     except Exception as e:
@@ -98,75 +100,78 @@ def update_input_shape(window, allocation):
 
     window.input_shape_combine_region(region)
 
+def handle_media_control(cmd):
+    """Handle media control commands."""
+    if cmd == "prev":
+        cmd = "previous"
+    if cmd not in ["play-pause", "next", "previous", "play", "pause"]:
+        return
+        
+    try:
+        from gi.repository import Playerctl
+        players = Playerctl.list_players()
+        if not players:
+            return
+            
+        target_name = next((p for p in players if "chromium" in p.name or "chrome" in p.name), players[0])
+        player = Playerctl.Player.new_from_name(target_name)
+        
+        if cmd == "play":
+            player.play()
+        elif cmd == "pause":
+            player.pause()
+        elif cmd == "play-pause":
+            player.play_pause()
+        elif cmd == "next":
+            player.next()
+        elif cmd == "previous":
+            player.previous()
+    except Exception:
+        try:
+            subprocess.run(["playerctl", cmd], capture_output=True)
+        except Exception:
+            pass
+
 # Handle window title update events
 def on_title_changed(webview, pspec, window):
     """Handle JS-to-Python communication via window title changes."""
     global menu_open, menu_height
     title = webview.get_title()
-    if title:
-        try:
-            import json
-            data = json.loads(title)
-            action = data.get("action")
-            if action == "menu-toggle":
-                menu_open = bool(data.get("open", False))
-                menu_height = int(data.get("menuHeight", 250))
-                # Bring window to front layer when settings menu is open
-                if menu_open:
-                    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP)
-                else:
-                    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
-                # Adjust window size to fit the visualizer or visualizer + menu
-                if visualizer_position in ["top", "bottom"]:
-                    target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
-                    window.set_size_request(0, target_height)
+    if not title:
+        return
+        
+    try:
+        data = json.loads(title)
+        action = data.get("action")
+        if action == "menu-toggle":
+            menu_open = bool(data.get("open", False))
+            menu_height = int(data.get("menuHeight", 250))
+            # Bring window to front layer when settings menu is open
+            if menu_open:
+                GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP)
+            else:
+                GtkLayerShell.set_layer(window, GtkLayerShell.Layer.BOTTOM)
+            # Adjust window size to fit the visualizer or visualizer + menu
+            if visualizer_position in ["top", "bottom"]:
+                target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
+                window.set_size_request(0, target_height)
+                window.resize(window.get_size()[0], target_height)
+            # Re-evaluate the input shape region
+            window.queue_resize()
+        elif action == "menu-resize":
+            menu_height = int(data.get("menuHeight", 250))
+            if menu_open:
+                if visualizer_position in ["bottom", "top"]:
+                    target_height = (visualizer_height + menu_height + 15)
                     window.resize(window.get_size()[0], target_height)
-                # Re-evaluate the input shape region
+                    window.set_size_request(0, target_height)
                 window.queue_resize()
-            elif action == "menu-resize":
-                menu_height = int(data.get("menuHeight", 250))
-                if menu_open:
-                    if visualizer_position in ["bottom", "top"]:
-                        target_height = (visualizer_height + menu_height + 15)
-                        window.resize(window.get_size()[0], target_height)
-                        window.set_size_request(0, target_height)
-                    window.queue_resize()
-            elif action == "close":
-                Gtk.main_quit()
-            elif action == "media-control":
-                cmd = data.get("command")
-                if cmd == "prev":
-                    cmd = "previous"
-                if cmd in ["play-pause", "next", "previous", "play", "pause"]:
-                    try:
-                        from gi.repository import Playerctl
-                        players = Playerctl.list_players()
-                        if players:
-                            target_name = None
-                            for p in players:
-                                if "chromium" in p.name or "chrome" in p.name:
-                                    target_name = p
-                                    break
-                            if not target_name:
-                                target_name = players[0]
-                            player = Playerctl.Player.new_from_name(target_name)
-                            if cmd == "play":
-                                player.play()
-                            elif cmd == "pause":
-                                player.pause()
-                            elif cmd == "play-pause":
-                                player.play_pause()
-                            elif cmd == "next":
-                                player.next()
-                            elif cmd == "previous":
-                                player.previous()
-                    except Exception:
-                        try:
-                            subprocess.run(["playerctl", cmd], capture_output=True)
-                        except Exception:
-                            pass
-        except Exception:
-            pass
+        elif action == "close":
+            Gtk.main_quit()
+        elif action == "media-control":
+            handle_media_control(data.get("command"))
+    except Exception:
+        pass
 
 # Route WebKit recording stream to HDMI
 def auto_route_audio(target_device):

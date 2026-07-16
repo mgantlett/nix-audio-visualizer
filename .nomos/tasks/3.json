@@ -1,0 +1,19 @@
+{
+  "key": "3",
+  "title": "Resolve Quality Debt: visualizer/main.js",
+  "status": "BACKLOG",
+  "assignee": "markg",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "priority:medium"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T18:34:34.952904171-04:00",
+  "updated_at": "2026-07-16T18:37:29.866269222-04:00",
+  "description": "## 📝 User Story / Description\nAs a developer, I want to resolve the following quality debt items associated with Task 3 to keep the codebase maintainable.\n\n## ✅ Acceptance Criteria\n- [ ] Resolve complexity_limit in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy graphics rendering loops out of scope for current feature)\n- [ ] Resolve churn_complexity in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy graphics rendering loops out of scope for current feature)\n- [ ] Resolve churn_complexity in [desktop-visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/desktop-visualizer.py) (Reason: Legacy file with high churn)\n- [ ] Resolve complexity_limit in [desktop-visualizer.py](file:///home/markg/Projects/nix-audio-visualizer/desktop-visualizer.py) (Reason: Deep if/else chains in legacy dbus event handlers)\n- [ ] Resolve monolithic_file_limit in [visualizer/main.js](file:///home/markg/Projects/nix-audio-visualizer/visualizer/main.js) (Reason: Legacy monolithic graphics file)\n\n## 🛠️ Technical Notes\n- Automatically tracked and synchronized by Nomos Quality Debt Manager.\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- **Target Files:**\n  - `[MODIFY] visualizer/main.js`\n  - `[MODIFY] desktop-visualizer.py`\n- **Quality Debt Exemptions:**\n  - `complexity_limit: true`\n  - `churn_complexity: true`\n  - `monolithic_file_limit: true`\n\n## 🤖 Swarm Routing \u0026 Metadata Configuration\n- **Executing Node:** swarm:antigravity\n- **Target Labels:** `agent:swarm:antigravity`\n- **Size / Story Points:** Size:2\n",
+  "dor_status": "",
+  "dod_status": ""
+}

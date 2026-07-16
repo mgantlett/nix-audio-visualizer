@@ -2,63 +2,43 @@
   "active_debt": [
     {
       "file": "visualizer/main.js",
+      "gate": "complexity_limit",
+      "reason": "Legacy graphics rendering loops out of scope for current feature",
+      "linked_task": "3",
+      "created_at": "2026-07-16T18:30:00-04:00",
+      "expires_at": "2027-01-01T00:00:00Z"
+    },
+    {
+      "file": "visualizer/main.js",
+      "gate": "churn_complexity",
+      "reason": "Legacy graphics rendering loops out of scope for current feature",
+      "linked_task": "3",
+      "created_at": "2026-07-16T18:30:00-04:00",
+      "expires_at": "2027-01-01T00:00:00Z"
+    },
+    {
+      "file": "desktop-visualizer.py",
+      "gate": "churn_complexity",
+      "reason": "Legacy file with high churn",
+      "linked_task": "3",
+      "created_at": "2026-07-16T18:30:00-04:00",
+      "expires_at": "2027-01-01T00:00:00Z"
+    },
+    {
+      "file": "desktop-visualizer.py",
+      "gate": "complexity_limit",
+      "reason": "Deep if/else chains in legacy dbus event handlers",
+      "linked_task": "3",
+      "created_at": "2026-07-16T18:30:00-04:00",
+      "expires_at": "2027-01-01T00:00:00Z"
+    },
+    {
+      "file": "visualizer/main.js",
       "gate": "monolithic_file_limit",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "desktop-visualizer.py",
-      "gate": "complexity_limit",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "visualizer/main.js",
-      "gate": "complexity_limit",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "visualizer/index.html",
-      "gate": "complexity_limit",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "shell.nix",
-      "gate": "comment_density",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": ".nomos/plugins/nixos/shell.nix",
-      "gate": "comment_density",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "visualizer/index.html",
-      "gate": "comment_density",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "visualizer/main.js",
-      "gate": "comment_density",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "desktop-visualizer.py",
-      "gate": "churn_complexity",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
-    },
-    {
-      "file": "visualizer/main.js",
-      "gate": "churn_complexity",
-      "expires_at": "2026-12-31T23:59:59Z",
-      "linked_task": "16"
+      "reason": "Legacy monolithic graphics file",
+      "linked_task": "3",
+      "created_at": "2026-07-16T18:30:00-04:00",
+      "expires_at": "2027-01-01T00:00:00Z"
     }
   ]
 }

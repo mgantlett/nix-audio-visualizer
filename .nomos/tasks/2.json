@@ -1,0 +1,21 @@
+{
+  "key": "2",
+  "type": "Story",
+  "title": "Resolve Visualizer Complexity Debt",
+  "status": "BACKLOG",
+  "assignee": "markg",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "agent:swarm:antigravity",
+    "priority:high"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T18:27:07.92931111-04:00",
+  "updated_at": "2026-07-16T18:27:07.929311786-04:00",
+  "description": "## 📝 User Story / Description\nResolve structural quality debt and deep nesting complexity in `visualizer/main.js` and `desktop-visualizer.py`.\n\n## ✅ Acceptance Criteria\n- Code nesting limit must pass Nomos DoD standard (Nesting level \u003c= 3).\n- Logic extracted into smaller helper functions where appropriate.\n\n## 🛠️ Technical Notes\n- Target files: `visualizer/main.js`, `desktop-visualizer.py`\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- `bin/nomos verify` passes complexity limits.\n",
+  "dor_status": "",
+  "dod_status": ""
+}
