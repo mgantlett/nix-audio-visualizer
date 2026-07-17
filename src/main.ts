@@ -1,26 +1,26 @@
 // @ts-nocheck
 /**
- * main.js
- * 
- * This is the entry point for the audio visualizer application.
- * It handles:
- * - DOM initialization and event listeners
- * - Main application loop (requestAnimationFrame)
- * - User Interface (UI) interactions (menus, buttons, sliders)
- * - IPC (Inter-Process Communication) with the Python backend wrapper
- * 
- * The main loop orchestrates the interaction between the audio module
- * (fetching new audio data) and the rendering module (drawing to the canvas).
- * 
- * Performance is a critical concern here; the main loop must execute within
- * 16ms to maintain a smooth 60 FPS. Therefore, DOM updates are minimized
- * and mostly restricted to canvas rendering operations.
- */
+* main.js
+* 
+* This is the entry point for the audio visualizer application.
+* It handles:
+* - DOM initialization and event listeners
+* - Main application loop (requestAnimationFrame)
+* - User Interface (UI) interactions (menus, buttons, sliders)
+* - IPC (Inter-Process Communication) with the Python backend wrapper
+* 
+* The main loop orchestrates the interaction between the audio module
+* (fetching new audio data) and the rendering module (drawing to the canvas).
+* 
+* Performance is a critical concern here; the main loop must execute within
+* 16ms to maintain a smooth 60 FPS. Therefore, DOM updates are minimized
+* and mostly restricted to canvas rendering operations.
+*/
 // main.js
 // Main entry point for the application. Orchestrates state, audio, rendering, and UI.
 
 import { state, styleSettings, DEFAULT_STYLE_SETTINGS } from './state.js';
-import { initAudio, precomputeMappings } from './audio.js';
+import { initAudio, resetAudioContext, toggleCalibrationMode, precomputeMappings } from './audio.js';
 import { render } from './rendering.js';
 
 const canvas = document.getElementById('visualizerCanvas');
@@ -397,13 +397,21 @@ showToast(state.isStereo ? "Stereo Mode: ON" : "Stereo Mode: OFF");
 }
 
 // Setup HUD options event listeners
-const hudShowToggle = document.getElementById('hudShowToggle');
+const hudShowToggle = (document.getElementById('hudShowToggle') as HTMLInputElement);
 if (hudShowToggle) {
 hudShowToggle.checked = state.hudShow;
 hudShowToggle.addEventListener('change', (e) => {
-state.hudShow = e.target.checked;
-localStorage.setItem('visualizer-hud-show', state.hudShow);
+state.hudShow = (e.target as HTMLInputElement).checked;
+localStorage.setItem('visualizer-hud-show', state.hudShow ? 'true' : 'false');
 updateHudDisplay();
+});
+}
+
+const testSignalToggle = (document.getElementById('testSignalToggle') as HTMLInputElement);
+if (testSignalToggle) {
+testSignalToggle.checked = state.testModeActive;
+testSignalToggle.addEventListener('change', (e) => {
+toggleCalibrationMode((e.target as HTMLInputElement).checked);
 });
 }
 
@@ -815,6 +823,5 @@ menu.classList.remove('winamp-menu');
 
 // Flush audio context buffer periodically (every 10 minutes) to prevent cumulative GStreamer/WebAudio resampler drift/desync
 setInterval(() => {
-(window as any).resetAudioContext();
+resetAudioContext();
 }, 10 * 60 * 1000);
-
