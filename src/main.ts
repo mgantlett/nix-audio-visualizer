@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * main.js
  * 
@@ -65,7 +66,7 @@ localStorage.setItem('visualizer-all-style-settings', JSON.stringify(styleSettin
 
 
 function resizeCanvas() {
-const heightParam = parseInt(urlParams.get('height') || '45');
+const heightParam = parseInt(new URLSearchParams(window.location.search).get('height') || '45');
 if (state.currentPosition === 'left' || state.currentPosition === 'right' || state.currentPosition === 'fullscreen') {
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -255,7 +256,7 @@ function toggleMenu(forceState) {
 state.menuOpen = (forceState !== undefined) ? forceState : !state.menuOpen;
 const menuEl = document.getElementById('controlsMenu');
 
-const heightParam = parseInt(urlParams.get('height') || '45');
+const heightParam = parseInt(new URLSearchParams(window.location.search).get('height') || '45');
 menuEl.style.bottom = `${heightParam + 5}px`;
 menuEl.style.display = state.menuOpen ? 'block' : 'none';
 
@@ -352,14 +353,14 @@ showToast(`Restored defaults for ${state.currentStyle} style`);
 initAudio(render);
 
 // Setup visualizer height styling from query parameters
-const heightParam = parseInt(urlParams.get('height') || '45');
+const heightParam = parseInt(new URLSearchParams(window.location.search).get('height') || '45');
 canvas.style.height = `${heightParam}px`;
 
 const trigger = document.getElementById('controlsTrigger');
 trigger.style.height = `${heightParam}px`;
 
 // Populate active device label from query params
-const rawDevice = urlParams.get('device') || 'Default';
+const rawDevice = new URLSearchParams(window.location.search).get('device') || 'Default';
 const deviceLabel = document.getElementById('deviceLabel');
 if (deviceLabel) {
 // Shorten device name for display
@@ -370,7 +371,7 @@ deviceLabel.innerText = `Source: ${displayDevice}`;
 // Event listeners setup
 const styleSelect = document.getElementById('styleSelect');
 if (styleSelect) {
-styleSelect.value = state.currentStyle;
+(styleSelect as HTMLSelectElement).value = state.currentStyle;
 styleSelect.addEventListener('change', (e) => {
 state.currentStyle = e.target.value;
 localStorage.setItem('visualizer-style', state.currentStyle);
@@ -617,7 +618,7 @@ let nextIndex = forward ?
 (currentIndex - 1 + styles.length) % styles.length;
 const styleSelect = document.getElementById('styleSelect');
 if (styleSelect) {
-styleSelect.value = styles[nextIndex];
+(styleSelect as HTMLSelectElement).value = styles[nextIndex];
 styleSelect.dispatchEvent(new Event('change'));
 }
 };
@@ -630,7 +631,7 @@ let nextIndex = forward ?
 (currentIndex - 1 + themes.length) % themes.length;
 const themeSelect = document.getElementById('themeSelect');
 if (themeSelect) {
-themeSelect.value = themes[nextIndex];
+(themeSelect as HTMLSelectElement).value = themes[nextIndex];
 themeSelect.dispatchEvent(new Event('change'));
 }
 };
@@ -638,9 +639,9 @@ themeSelect.dispatchEvent(new Event('change'));
 window.adjustGain = function(up) {
 const gainSlider = document.getElementById('gainSlider');
 if (gainSlider) {
-let val = parseFloat(gainSlider.value);
+let val = parseFloat((gainSlider as HTMLInputElement).value);
 val = up ? Math.min(3.0, val + 0.1) : Math.max(0.5, val - 0.1);
-gainSlider.value = val;
+(gainSlider as HTMLInputElement).value = val;
 gainSlider.dispatchEvent(new Event('input'));
 if (typeof showToast === 'function') {
 showToast(`Sensitivity: ${val.toFixed(1)}`);
@@ -656,7 +657,7 @@ toggleMenu(!state.menuOpen);
 }
 // 'h' or 'H' key toggles HUD
 else if (e.key === 'h' || e.key === 'H') {
-toggleHudGlobal();
+(window as any).toggleHudGlobal();
 }
 // 'Escape' key hides menu or help card
 else if (e.key === 'Escape') {
@@ -680,7 +681,7 @@ let nextIndex = (e.key === 's') ?
 (currentIndex + 1) % styles.length;
 const styleSelect = document.getElementById('styleSelect');
 if (styleSelect) {
-styleSelect.value = styles[nextIndex];
+(styleSelect as HTMLSelectElement).value = styles[nextIndex];
 styleSelect.dispatchEvent(new Event('change'));
 }
 }
@@ -693,7 +694,7 @@ let nextIndex = (e.key === 't') ?
 (currentIndex + 1) % themes.length;
 const themeSelect = document.getElementById('themeSelect');
 if (themeSelect) {
-themeSelect.value = themes[nextIndex];
+(themeSelect as HTMLSelectElement).value = themes[nextIndex];
 themeSelect.dispatchEvent(new Event('change'));
 }
 }
@@ -702,8 +703,8 @@ else if (e.key === 'ArrowUp') {
 e.preventDefault();
 const gainSlider = document.getElementById('gainSlider');
 if (gainSlider) {
-let newVal = Math.min(3.0, parseFloat(gainSlider.value) + 0.1);
-gainSlider.value = newVal.toFixed(1);
+let newVal = Math.min(3.0, parseFloat((gainSlider as HTMLInputElement).value) + 0.1);
+(gainSlider as HTMLInputElement).value = newVal.toFixed(1);
 gainSlider.dispatchEvent(new Event('input'));
 }
 }
@@ -711,8 +712,8 @@ else if (e.key === 'ArrowDown') {
 e.preventDefault();
 const gainSlider = document.getElementById('gainSlider');
 if (gainSlider) {
-let newVal = Math.max(0.5, parseFloat(gainSlider.value) - 0.1);
-gainSlider.value = newVal.toFixed(1);
+let newVal = Math.max(0.5, parseFloat((gainSlider as HTMLInputElement).value) - 0.1);
+(gainSlider as HTMLInputElement).value = newVal.toFixed(1);
 gainSlider.dispatchEvent(new Event('input'));
 }
 }
@@ -814,6 +815,6 @@ menu.classList.remove('winamp-menu');
 
 // Flush audio context buffer periodically (every 10 minutes) to prevent cumulative GStreamer/WebAudio resampler drift/desync
 setInterval(() => {
-resetAudioContext();
+(window as any).resetAudioContext();
 }, 10 * 60 * 1000);
 

@@ -5,6 +5,10 @@
 # Resolve path of the project root
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Compile TypeScript to JS
+echo "🔨 Compiling TypeScript..."
+npx tsc || { echo "❌ TypeScript compilation failed!"; exit 1; }
+
 # Run python desktop wrapper inside or outside the development nix-shell
 if [ -n "$IN_NIX_SHELL" ]; then
     exec env __NV_DISABLE_EXPLICIT_SYNC=1 python3 "$ROOT_DIR/desktop-visualizer.py" "$@"

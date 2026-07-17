@@ -1,0 +1,27 @@
+{
+  "name": "nix-audio-visualizer",
+  "version": "1.0.0",
+  "description": "Welcome to the **Nix Audio Visualizer** codebase. This project provides a powerful, Nix-native audio visualization suite integrated with **Nomos** for governance, observability, and deterministic workflow enforcement.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgantlett/nix-audio-visualizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mgantlett/nix-audio-visualizer/issues"
+  },
+  "homepage": "https://github.com/mgantlett/nix-audio-visualizer#readme",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

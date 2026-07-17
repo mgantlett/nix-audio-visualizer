@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Additional Rendering Context:
  * The canvas context is strictly optimized for speed.
@@ -31,6 +32,10 @@
 // rendering.js
 import { state, getThemeColor, getBaseHue, updatePeak, updateWavePeak } from './state.js';
 import { precomputeMappings, getMappedValue, updateReactiveState } from './audio.js';
+
+let smoothedDataArray = null;
+let smoothedDataArrayL = null;
+let smoothedDataArrayR = null;
 
 function renderVerticalBars(arr, yOffset, isMirrored, height, width) {
 const bars = state.barsCount;
@@ -627,8 +632,8 @@ const columns = state.vfdColumns;
 const targetWidth = state.isStereo ? width / 2 : width;
 const colWidth = targetWidth / columns;
 const gap = Math.max(2, colWidth * 0.2);
-const state.segGap = 2;
-const state.segHeight = Math.max(4, height / 15 - state.segGap);
+state.segGap = 2;
+state.segHeight = Math.max(4, height / 15 - state.segGap);
 const totalSegments = Math.max(5, Math.floor((height - 2) / (state.segHeight + state.segGap)));
 
 if (state.vfdPeaks.length !== columns) {
@@ -930,9 +935,9 @@ const w = state.canvas.width;
 const h = state.canvas.height;
 state.ctx.clearRect(0, 0, w, h);
 
-if (analyser) {
-analyser.getByteFrequencyData(state.dataArray);
-analyser.getByteTimeDomainData(state.waveArray);
+if (state.analyser) {
+state.analyser.getByteFrequencyData(state.dataArray);
+state.analyser.getByteTimeDomainData(state.waveArray);
 
 // --- Custom JS Smoothing EMA Engine ---
 const attackInertia = 0.05; // Snappy instant attack
@@ -951,11 +956,11 @@ smoothedDataArray[i] = smoothedDataArray[i] * releaseInertia + raw * (1 - releas
 state.dataArray[i] = Math.round(smoothedDataArray[i]);
 }
 
-if (analyserL && analyserR && state.dataArrayL && state.dataArrayR && state.waveArrayL && state.waveArrayR) {
-analyserL.getByteFrequencyData(state.dataArrayL);
-analyserL.getByteTimeDomainData(state.waveArrayL);
-analyserR.getByteFrequencyData(state.dataArrayR);
-analyserR.getByteTimeDomainData(state.waveArrayR);
+if (state.analyserL && state.analyserR && state.dataArrayL && state.dataArrayR && state.waveArrayL && state.waveArrayR) {
+state.analyserL.getByteFrequencyData(state.dataArrayL);
+state.analyserL.getByteTimeDomainData(state.waveArrayL);
+state.analyserR.getByteFrequencyData(state.dataArrayR);
+state.analyserR.getByteTimeDomainData(state.waveArrayR);
 
 if (!smoothedDataArrayL || smoothedDataArrayL.length !== state.dataArrayL.length) {
 smoothedDataArrayL = new Float32Array(state.dataArrayL.length);
