@@ -1,0 +1,25 @@
+{
+  "key": "5",
+  "type": "Bug",
+  "title": "Fix SyntaxError: Cannot declare a let variable twice",
+  "status": "PLAN",
+  "assignee": "swarm:aider",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "priority:critical"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T19:49:50.049996712-04:00",
+  "updated_at": "2026-07-16T20:15:43.250645285-04:00",
+  "description": "# Fix Syntax Errors in refactored JS\n\n## 📝 User Story / Description\nThe refactoring process introduced two syntax errors when modifying object properties (`let state.menuOpen` and `const state.segHeight`). These need to be fixed to restore functionality.\n\n## ✅ Acceptance Criteria\n- [ ] Fix syntax error `let state.menuOpen` in `visualizer/main.js`\n- [ ] Fix syntax error `const state.segHeight` in `visualizer/rendering.js`\n- [ ] Visualizer runs without JS syntax errors\n\n## 🛠️ Technical Notes\n- Replace `let state.menuOpen = false;` with `state.menuOpen = false;`\n- Replace `const state.segHeight = ...` with `state.segHeight = ...`\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- [ ] Check Chrome DevTools console to ensure no errors\n- [ ] `nomos verify` passes cleanly\n\n- **Quality Debt Exemptions:**\n  - `complexity_limit: false`\n  - `doc_drift: false`\n  - `dry_candidate: false`\n\n",
+  "comments": [
+    "⚠️  Definition of Done (DoD) verification failed for task 5:\n- Walkthrough Parity Check: walkthrough file not found: /home/markg/Projects/nix-audio-visualizer/.nomos/walkthroughs/5.md. Run 'bin/nomos walkthrough' to generate one.\n    \u001b[1;33m💡 Guidance:\u001b[0m Verify that all Acceptance Criteria in the active task description are covered in the walkthrough.\n- Comment Density Check: comment density constraints violated:\n - file 'visualizer/audio.js' has comment density of 1.3% (comments: 3, code: 231) below minimum of 10%\n - file 'visualizer/main.js' has comment density of 8.7% (comments: 58, code: 665) below minimum of 10%\n - file 'visualizer/rendering.js' has comment density of 6.7% (comments: 54, code: 808) below minimum of 10%\n - file 'visualizer/state.js' has comment density of 6.1% (comments: 11, code: 181) below minimum of 10%\n    \u001b[1;33m💡 Guidance:\u001b[0m Add descriptive comments inside files modified to exceed 10% comment-to-source-lines density.\n\nAI progress is temporarily blocked until these quality gates pass.",
+    "⚠️  Definition of Done (DoD) verification failed for task 5:\n- Walkthrough Parity Check: walkthrough file not found: /home/markg/Projects/nix-audio-visualizer/.nomos/walkthroughs/5.md. Run 'bin/nomos walkthrough' to generate one.\n    \u001b[1;33m💡 Guidance:\u001b[0m Verify that all Acceptance Criteria in the active task description are covered in the walkthrough.\n- Comment Density Check: comment density constraints violated:\n - file 'visualizer/rendering.js' has comment density of 9.5% (comments: 77, code: 808) below minimum of 10%\n    \u001b[1;33m💡 Guidance:\u001b[0m Add descriptive comments inside files modified to exceed 10% comment-to-source-lines density.\n\nAI progress is temporarily blocked until these quality gates pass.",
+    "🔍 Ready for Review: Transitioning task 5 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+  ],
+  "dor_status": "",
+  "dod_status": ""
+}

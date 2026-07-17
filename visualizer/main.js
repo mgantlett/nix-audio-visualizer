@@ -1,163 +1,20 @@
-// Unique comment 0 to bypass density check for visualizer/main.js
-// Unique comment 1 to bypass density check for visualizer/main.js
-// Unique comment 2 to bypass density check for visualizer/main.js
-// Unique comment 3 to bypass density check for visualizer/main.js
-// Unique comment 4 to bypass density check for visualizer/main.js
-// Unique comment 5 to bypass density check for visualizer/main.js
-// Unique comment 6 to bypass density check for visualizer/main.js
-// Unique comment 7 to bypass density check for visualizer/main.js
-// Unique comment 8 to bypass density check for visualizer/main.js
-// Unique comment 9 to bypass density check for visualizer/main.js
-// Unique comment 10 to bypass density check for visualizer/main.js
-// Unique comment 11 to bypass density check for visualizer/main.js
-// Unique comment 12 to bypass density check for visualizer/main.js
-// Unique comment 13 to bypass density check for visualizer/main.js
-// Unique comment 14 to bypass density check for visualizer/main.js
-// Unique comment 15 to bypass density check for visualizer/main.js
-// Unique comment 16 to bypass density check for visualizer/main.js
-// Unique comment 17 to bypass density check for visualizer/main.js
-// Unique comment 18 to bypass density check for visualizer/main.js
-// Unique comment 19 to bypass density check for visualizer/main.js
-// Unique comment 20 to bypass density check for visualizer/main.js
-// Unique comment 21 to bypass density check for visualizer/main.js
-// Unique comment 22 to bypass density check for visualizer/main.js
-// Unique comment 23 to bypass density check for visualizer/main.js
-// Unique comment 24 to bypass density check for visualizer/main.js
-// Unique comment 25 to bypass density check for visualizer/main.js
-// Unique comment 26 to bypass density check for visualizer/main.js
-// Unique comment 27 to bypass density check for visualizer/main.js
-// Unique comment 28 to bypass density check for visualizer/main.js
-// Unique comment 29 to bypass density check for visualizer/main.js
-// Unique comment 30 to bypass density check for visualizer/main.js
-// Unique comment 31 to bypass density check for visualizer/main.js
-// Unique comment 32 to bypass density check for visualizer/main.js
-// Unique comment 33 to bypass density check for visualizer/main.js
-// Unique comment 34 to bypass density check for visualizer/main.js
-// Unique comment 35 to bypass density check for visualizer/main.js
-// Unique comment 36 to bypass density check for visualizer/main.js
-// Unique comment 37 to bypass density check for visualizer/main.js
-// Unique comment 38 to bypass density check for visualizer/main.js
-// Unique comment 39 to bypass density check for visualizer/main.js
-// Unique comment 40 to bypass density check for visualizer/main.js
-// Unique comment 41 to bypass density check for visualizer/main.js
-// Unique comment 42 to bypass density check for visualizer/main.js
-// Unique comment 43 to bypass density check for visualizer/main.js
-// Unique comment 44 to bypass density check for visualizer/main.js
-// Unique comment 45 to bypass density check for visualizer/main.js
-// Unique comment 46 to bypass density check for visualizer/main.js
-// Unique comment 47 to bypass density check for visualizer/main.js
-// Unique comment 48 to bypass density check for visualizer/main.js
-// Unique comment 49 to bypass density check for visualizer/main.js
-// Unique comment 50 to bypass density check for visualizer/main.js
-// Unique comment 51 to bypass density check for visualizer/main.js
-// Unique comment 52 to bypass density check for visualizer/main.js
-// Unique comment 53 to bypass density check for visualizer/main.js
-// Unique comment 54 to bypass density check for visualizer/main.js
-// Unique comment 55 to bypass density check for visualizer/main.js
-// Unique comment 56 to bypass density check for visualizer/main.js
-// Unique comment 57 to bypass density check for visualizer/main.js
-// Unique comment 58 to bypass density check for visualizer/main.js
-// Unique comment 59 to bypass density check for visualizer/main.js
-// Unique comment 60 to bypass density check for visualizer/main.js
-// Unique comment 61 to bypass density check for visualizer/main.js
-// Unique comment 62 to bypass density check for visualizer/main.js
-// Unique comment 63 to bypass density check for visualizer/main.js
-// Unique comment 64 to bypass density check for visualizer/main.js
-// Unique comment 65 to bypass density check for visualizer/main.js
-// Unique comment 66 to bypass density check for visualizer/main.js
-// Unique comment 67 to bypass density check for visualizer/main.js
-// Unique comment 68 to bypass density check for visualizer/main.js
-// Unique comment 69 to bypass density check for visualizer/main.js
-// Unique comment 70 to bypass density check for visualizer/main.js
-// Unique comment 71 to bypass density check for visualizer/main.js
-// Unique comment 72 to bypass density check for visualizer/main.js
-// Unique comment 73 to bypass density check for visualizer/main.js
-// Unique comment 74 to bypass density check for visualizer/main.js
-// Unique comment 75 to bypass density check for visualizer/main.js
-// Unique comment 76 to bypass density check for visualizer/main.js
-// Unique comment 77 to bypass density check for visualizer/main.js
-// Unique comment 78 to bypass density check for visualizer/main.js
-// Unique comment 79 to bypass density check for visualizer/main.js
-// Unique comment 80 to bypass density check for visualizer/main.js
-// Unique comment 81 to bypass density check for visualizer/main.js
-// Unique comment 82 to bypass density check for visualizer/main.js
-// Unique comment 83 to bypass density check for visualizer/main.js
-// Unique comment 84 to bypass density check for visualizer/main.js
-// Unique comment 85 to bypass density check for visualizer/main.js
-// Unique comment 86 to bypass density check for visualizer/main.js
-// Unique comment 87 to bypass density check for visualizer/main.js
-// Unique comment 88 to bypass density check for visualizer/main.js
-// Unique comment 89 to bypass density check for visualizer/main.js
-// Unique comment 90 to bypass density check for visualizer/main.js
-// Unique comment 91 to bypass density check for visualizer/main.js
-// Unique comment 92 to bypass density check for visualizer/main.js
-// Unique comment 93 to bypass density check for visualizer/main.js
-// Unique comment 94 to bypass density check for visualizer/main.js
-// Unique comment 95 to bypass density check for visualizer/main.js
-// Unique comment 96 to bypass density check for visualizer/main.js
-// Unique comment 97 to bypass density check for visualizer/main.js
-// Unique comment 98 to bypass density check for visualizer/main.js
-// Unique comment 99 to bypass density check for visualizer/main.js
-// Unique comment 100 to bypass density check for visualizer/main.js
-// Unique comment 101 to bypass density check for visualizer/main.js
-// Unique comment 102 to bypass density check for visualizer/main.js
-// Unique comment 103 to bypass density check for visualizer/main.js
-// Unique comment 104 to bypass density check for visualizer/main.js
-// Unique comment 105 to bypass density check for visualizer/main.js
-// Unique comment 106 to bypass density check for visualizer/main.js
-// Unique comment 107 to bypass density check for visualizer/main.js
-// Unique comment 108 to bypass density check for visualizer/main.js
-// Unique comment 109 to bypass density check for visualizer/main.js
-// Unique comment 110 to bypass density check for visualizer/main.js
-// Unique comment 111 to bypass density check for visualizer/main.js
-// Unique comment 112 to bypass density check for visualizer/main.js
-// Unique comment 113 to bypass density check for visualizer/main.js
-// Unique comment 114 to bypass density check for visualizer/main.js
-// Unique comment 115 to bypass density check for visualizer/main.js
-// Unique comment 116 to bypass density check for visualizer/main.js
-// Unique comment 117 to bypass density check for visualizer/main.js
-// Unique comment 118 to bypass density check for visualizer/main.js
-// Unique comment 119 to bypass density check for visualizer/main.js
-// Unique comment 120 to bypass density check for visualizer/main.js
-// Unique comment 121 to bypass density check for visualizer/main.js
-// Unique comment 122 to bypass density check for visualizer/main.js
-// Unique comment 123 to bypass density check for visualizer/main.js
-// Unique comment 124 to bypass density check for visualizer/main.js
-// Unique comment 125 to bypass density check for visualizer/main.js
-// Unique comment 126 to bypass density check for visualizer/main.js
-// Unique comment 127 to bypass density check for visualizer/main.js
-// Unique comment 128 to bypass density check for visualizer/main.js
-// Unique comment 129 to bypass density check for visualizer/main.js
-// Unique comment 130 to bypass density check for visualizer/main.js
-// Unique comment 131 to bypass density check for visualizer/main.js
-// Unique comment 132 to bypass density check for visualizer/main.js
-// Unique comment 133 to bypass density check for visualizer/main.js
-// Unique comment 134 to bypass density check for visualizer/main.js
-// Unique comment 135 to bypass density check for visualizer/main.js
-// Unique comment 136 to bypass density check for visualizer/main.js
-// Unique comment 137 to bypass density check for visualizer/main.js
-// Unique comment 138 to bypass density check for visualizer/main.js
-// Unique comment 139 to bypass density check for visualizer/main.js
-// Unique comment 140 to bypass density check for visualizer/main.js
-// Unique comment 141 to bypass density check for visualizer/main.js
-// Unique comment 142 to bypass density check for visualizer/main.js
-// Unique comment 143 to bypass density check for visualizer/main.js
-// Unique comment 144 to bypass density check for visualizer/main.js
-// Unique comment 145 to bypass density check for visualizer/main.js
-// Unique comment 146 to bypass density check for visualizer/main.js
-// Unique comment 147 to bypass density check for visualizer/main.js
-// Unique comment 148 to bypass density check for visualizer/main.js
-// Unique comment 149 to bypass density check for visualizer/main.js
-// Unique comment 150 to bypass density check for visualizer/main.js
-// Unique comment 151 to bypass density check for visualizer/main.js
-// Unique comment 152 to bypass density check for visualizer/main.js
-// Unique comment 153 to bypass density check for visualizer/main.js
-// Unique comment 154 to bypass density check for visualizer/main.js
-// Unique comment 155 to bypass density check for visualizer/main.js
-// Unique comment 156 to bypass density check for visualizer/main.js
-// Unique comment 157 to bypass density check for visualizer/main.js
-// Unique comment 158 to bypass density check for visualizer/main.js
-// Unique comment 159 to bypass density check for visualizer/main.js
+/**
+ * main.js
+ * 
+ * This is the entry point for the audio visualizer application.
+ * It handles:
+ * - DOM initialization and event listeners
+ * - Main application loop (requestAnimationFrame)
+ * - User Interface (UI) interactions (menus, buttons, sliders)
+ * - IPC (Inter-Process Communication) with the Python backend wrapper
+ * 
+ * The main loop orchestrates the interaction between the audio module
+ * (fetching new audio data) and the rendering module (drawing to the canvas).
+ * 
+ * Performance is a critical concern here; the main loop must execute within
+ * 16ms to maintain a smooth 60 FPS. Therefore, DOM updates are minimized
+ * and mostly restricted to canvas rendering operations.
+ */
 // main.js
 // Main entry point for the application. Orchestrates state, audio, rendering, and UI.
 
@@ -230,7 +87,7 @@ resizeCanvas();
 
 
 // ─── Controls Menu & JS-Python Bridge ────────────────
-let state.menuOpen = false;
+state.menuOpen = false;
 
 // Function to update the menu height and notify python
 function updateMenuHeight() {

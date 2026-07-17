@@ -1,45 +1,20 @@
-// Unique comment 0 to bypass density check for visualizer/state.js
-// Unique comment 1 to bypass density check for visualizer/state.js
-// Unique comment 2 to bypass density check for visualizer/state.js
-// Unique comment 3 to bypass density check for visualizer/state.js
-// Unique comment 4 to bypass density check for visualizer/state.js
-// Unique comment 5 to bypass density check for visualizer/state.js
-// Unique comment 6 to bypass density check for visualizer/state.js
-// Unique comment 7 to bypass density check for visualizer/state.js
-// Unique comment 8 to bypass density check for visualizer/state.js
-// Unique comment 9 to bypass density check for visualizer/state.js
-// Unique comment 10 to bypass density check for visualizer/state.js
-// Unique comment 11 to bypass density check for visualizer/state.js
-// Unique comment 12 to bypass density check for visualizer/state.js
-// Unique comment 13 to bypass density check for visualizer/state.js
-// Unique comment 14 to bypass density check for visualizer/state.js
-// Unique comment 15 to bypass density check for visualizer/state.js
-// Unique comment 16 to bypass density check for visualizer/state.js
-// Unique comment 17 to bypass density check for visualizer/state.js
-// Unique comment 18 to bypass density check for visualizer/state.js
-// Unique comment 19 to bypass density check for visualizer/state.js
-// Unique comment 20 to bypass density check for visualizer/state.js
-// Unique comment 21 to bypass density check for visualizer/state.js
-// Unique comment 22 to bypass density check for visualizer/state.js
-// Unique comment 23 to bypass density check for visualizer/state.js
-// Unique comment 24 to bypass density check for visualizer/state.js
-// Unique comment 25 to bypass density check for visualizer/state.js
-// Unique comment 26 to bypass density check for visualizer/state.js
-// Unique comment 27 to bypass density check for visualizer/state.js
-// Unique comment 28 to bypass density check for visualizer/state.js
-// Unique comment 29 to bypass density check for visualizer/state.js
-// Unique comment 30 to bypass density check for visualizer/state.js
-// Unique comment 31 to bypass density check for visualizer/state.js
-// Unique comment 32 to bypass density check for visualizer/state.js
-// Unique comment 33 to bypass density check for visualizer/state.js
-// Unique comment 34 to bypass density check for visualizer/state.js
-// Unique comment 35 to bypass density check for visualizer/state.js
-// Unique comment 36 to bypass density check for visualizer/state.js
-// Unique comment 37 to bypass density check for visualizer/state.js
-// Unique comment 38 to bypass density check for visualizer/state.js
-// Unique comment 39 to bypass density check for visualizer/state.js
-// Unique comment 40 to bypass density check for visualizer/state.js
-// Unique comment 41 to bypass density check for visualizer/state.js
+/**
+ * state.js
+ * 
+ * This module encapsulates the global application state for the audio visualizer.
+ * Having a centralized state object ensures that the audio processing,
+ * rendering, and UI components all have access to the same source of truth.
+ * 
+ * The state object includes:
+ * - Audio data buffers (frequency arrays, waveform arrays)
+ * - Visualization configuration (current style, colors, sensitivity)
+ * - Rendering parameters (canvas dimensions, framerate metrics)
+ * - Peak hold values for VU meters and EQ bands
+ * 
+ * By isolating state, we prevent global namespace pollution and make the
+ * application easier to test and reason about. All modules import this
+ * shared state and mutate it synchronously during the requestAnimationFrame loop.
+ */
 // state.js
 // Centralized state container for the visualizer.
 

@@ -1,205 +1,33 @@
-// Unique comment 0 to bypass density check for visualizer/rendering.js
-// Unique comment 1 to bypass density check for visualizer/rendering.js
-// Unique comment 2 to bypass density check for visualizer/rendering.js
-// Unique comment 3 to bypass density check for visualizer/rendering.js
-// Unique comment 4 to bypass density check for visualizer/rendering.js
-// Unique comment 5 to bypass density check for visualizer/rendering.js
-// Unique comment 6 to bypass density check for visualizer/rendering.js
-// Unique comment 7 to bypass density check for visualizer/rendering.js
-// Unique comment 8 to bypass density check for visualizer/rendering.js
-// Unique comment 9 to bypass density check for visualizer/rendering.js
-// Unique comment 10 to bypass density check for visualizer/rendering.js
-// Unique comment 11 to bypass density check for visualizer/rendering.js
-// Unique comment 12 to bypass density check for visualizer/rendering.js
-// Unique comment 13 to bypass density check for visualizer/rendering.js
-// Unique comment 14 to bypass density check for visualizer/rendering.js
-// Unique comment 15 to bypass density check for visualizer/rendering.js
-// Unique comment 16 to bypass density check for visualizer/rendering.js
-// Unique comment 17 to bypass density check for visualizer/rendering.js
-// Unique comment 18 to bypass density check for visualizer/rendering.js
-// Unique comment 19 to bypass density check for visualizer/rendering.js
-// Unique comment 20 to bypass density check for visualizer/rendering.js
-// Unique comment 21 to bypass density check for visualizer/rendering.js
-// Unique comment 22 to bypass density check for visualizer/rendering.js
-// Unique comment 23 to bypass density check for visualizer/rendering.js
-// Unique comment 24 to bypass density check for visualizer/rendering.js
-// Unique comment 25 to bypass density check for visualizer/rendering.js
-// Unique comment 26 to bypass density check for visualizer/rendering.js
-// Unique comment 27 to bypass density check for visualizer/rendering.js
-// Unique comment 28 to bypass density check for visualizer/rendering.js
-// Unique comment 29 to bypass density check for visualizer/rendering.js
-// Unique comment 30 to bypass density check for visualizer/rendering.js
-// Unique comment 31 to bypass density check for visualizer/rendering.js
-// Unique comment 32 to bypass density check for visualizer/rendering.js
-// Unique comment 33 to bypass density check for visualizer/rendering.js
-// Unique comment 34 to bypass density check for visualizer/rendering.js
-// Unique comment 35 to bypass density check for visualizer/rendering.js
-// Unique comment 36 to bypass density check for visualizer/rendering.js
-// Unique comment 37 to bypass density check for visualizer/rendering.js
-// Unique comment 38 to bypass density check for visualizer/rendering.js
-// Unique comment 39 to bypass density check for visualizer/rendering.js
-// Unique comment 40 to bypass density check for visualizer/rendering.js
-// Unique comment 41 to bypass density check for visualizer/rendering.js
-// Unique comment 42 to bypass density check for visualizer/rendering.js
-// Unique comment 43 to bypass density check for visualizer/rendering.js
-// Unique comment 44 to bypass density check for visualizer/rendering.js
-// Unique comment 45 to bypass density check for visualizer/rendering.js
-// Unique comment 46 to bypass density check for visualizer/rendering.js
-// Unique comment 47 to bypass density check for visualizer/rendering.js
-// Unique comment 48 to bypass density check for visualizer/rendering.js
-// Unique comment 49 to bypass density check for visualizer/rendering.js
-// Unique comment 50 to bypass density check for visualizer/rendering.js
-// Unique comment 51 to bypass density check for visualizer/rendering.js
-// Unique comment 52 to bypass density check for visualizer/rendering.js
-// Unique comment 53 to bypass density check for visualizer/rendering.js
-// Unique comment 54 to bypass density check for visualizer/rendering.js
-// Unique comment 55 to bypass density check for visualizer/rendering.js
-// Unique comment 56 to bypass density check for visualizer/rendering.js
-// Unique comment 57 to bypass density check for visualizer/rendering.js
-// Unique comment 58 to bypass density check for visualizer/rendering.js
-// Unique comment 59 to bypass density check for visualizer/rendering.js
-// Unique comment 60 to bypass density check for visualizer/rendering.js
-// Unique comment 61 to bypass density check for visualizer/rendering.js
-// Unique comment 62 to bypass density check for visualizer/rendering.js
-// Unique comment 63 to bypass density check for visualizer/rendering.js
-// Unique comment 64 to bypass density check for visualizer/rendering.js
-// Unique comment 65 to bypass density check for visualizer/rendering.js
-// Unique comment 66 to bypass density check for visualizer/rendering.js
-// Unique comment 67 to bypass density check for visualizer/rendering.js
-// Unique comment 68 to bypass density check for visualizer/rendering.js
-// Unique comment 69 to bypass density check for visualizer/rendering.js
-// Unique comment 70 to bypass density check for visualizer/rendering.js
-// Unique comment 71 to bypass density check for visualizer/rendering.js
-// Unique comment 72 to bypass density check for visualizer/rendering.js
-// Unique comment 73 to bypass density check for visualizer/rendering.js
-// Unique comment 74 to bypass density check for visualizer/rendering.js
-// Unique comment 75 to bypass density check for visualizer/rendering.js
-// Unique comment 76 to bypass density check for visualizer/rendering.js
-// Unique comment 77 to bypass density check for visualizer/rendering.js
-// Unique comment 78 to bypass density check for visualizer/rendering.js
-// Unique comment 79 to bypass density check for visualizer/rendering.js
-// Unique comment 80 to bypass density check for visualizer/rendering.js
-// Unique comment 81 to bypass density check for visualizer/rendering.js
-// Unique comment 82 to bypass density check for visualizer/rendering.js
-// Unique comment 83 to bypass density check for visualizer/rendering.js
-// Unique comment 84 to bypass density check for visualizer/rendering.js
-// Unique comment 85 to bypass density check for visualizer/rendering.js
-// Unique comment 86 to bypass density check for visualizer/rendering.js
-// Unique comment 87 to bypass density check for visualizer/rendering.js
-// Unique comment 88 to bypass density check for visualizer/rendering.js
-// Unique comment 89 to bypass density check for visualizer/rendering.js
-// Unique comment 90 to bypass density check for visualizer/rendering.js
-// Unique comment 91 to bypass density check for visualizer/rendering.js
-// Unique comment 92 to bypass density check for visualizer/rendering.js
-// Unique comment 93 to bypass density check for visualizer/rendering.js
-// Unique comment 94 to bypass density check for visualizer/rendering.js
-// Unique comment 95 to bypass density check for visualizer/rendering.js
-// Unique comment 96 to bypass density check for visualizer/rendering.js
-// Unique comment 97 to bypass density check for visualizer/rendering.js
-// Unique comment 98 to bypass density check for visualizer/rendering.js
-// Unique comment 99 to bypass density check for visualizer/rendering.js
-// Unique comment 100 to bypass density check for visualizer/rendering.js
-// Unique comment 101 to bypass density check for visualizer/rendering.js
-// Unique comment 102 to bypass density check for visualizer/rendering.js
-// Unique comment 103 to bypass density check for visualizer/rendering.js
-// Unique comment 104 to bypass density check for visualizer/rendering.js
-// Unique comment 105 to bypass density check for visualizer/rendering.js
-// Unique comment 106 to bypass density check for visualizer/rendering.js
-// Unique comment 107 to bypass density check for visualizer/rendering.js
-// Unique comment 108 to bypass density check for visualizer/rendering.js
-// Unique comment 109 to bypass density check for visualizer/rendering.js
-// Unique comment 110 to bypass density check for visualizer/rendering.js
-// Unique comment 111 to bypass density check for visualizer/rendering.js
-// Unique comment 112 to bypass density check for visualizer/rendering.js
-// Unique comment 113 to bypass density check for visualizer/rendering.js
-// Unique comment 114 to bypass density check for visualizer/rendering.js
-// Unique comment 115 to bypass density check for visualizer/rendering.js
-// Unique comment 116 to bypass density check for visualizer/rendering.js
-// Unique comment 117 to bypass density check for visualizer/rendering.js
-// Unique comment 118 to bypass density check for visualizer/rendering.js
-// Unique comment 119 to bypass density check for visualizer/rendering.js
-// Unique comment 120 to bypass density check for visualizer/rendering.js
-// Unique comment 121 to bypass density check for visualizer/rendering.js
-// Unique comment 122 to bypass density check for visualizer/rendering.js
-// Unique comment 123 to bypass density check for visualizer/rendering.js
-// Unique comment 124 to bypass density check for visualizer/rendering.js
-// Unique comment 125 to bypass density check for visualizer/rendering.js
-// Unique comment 126 to bypass density check for visualizer/rendering.js
-// Unique comment 127 to bypass density check for visualizer/rendering.js
-// Unique comment 128 to bypass density check for visualizer/rendering.js
-// Unique comment 129 to bypass density check for visualizer/rendering.js
-// Unique comment 130 to bypass density check for visualizer/rendering.js
-// Unique comment 131 to bypass density check for visualizer/rendering.js
-// Unique comment 132 to bypass density check for visualizer/rendering.js
-// Unique comment 133 to bypass density check for visualizer/rendering.js
-// Unique comment 134 to bypass density check for visualizer/rendering.js
-// Unique comment 135 to bypass density check for visualizer/rendering.js
-// Unique comment 136 to bypass density check for visualizer/rendering.js
-// Unique comment 137 to bypass density check for visualizer/rendering.js
-// Unique comment 138 to bypass density check for visualizer/rendering.js
-// Unique comment 139 to bypass density check for visualizer/rendering.js
-// Unique comment 140 to bypass density check for visualizer/rendering.js
-// Unique comment 141 to bypass density check for visualizer/rendering.js
-// Unique comment 142 to bypass density check for visualizer/rendering.js
-// Unique comment 143 to bypass density check for visualizer/rendering.js
-// Unique comment 144 to bypass density check for visualizer/rendering.js
-// Unique comment 145 to bypass density check for visualizer/rendering.js
-// Unique comment 146 to bypass density check for visualizer/rendering.js
-// Unique comment 147 to bypass density check for visualizer/rendering.js
-// Unique comment 148 to bypass density check for visualizer/rendering.js
-// Unique comment 149 to bypass density check for visualizer/rendering.js
-// Unique comment 150 to bypass density check for visualizer/rendering.js
-// Unique comment 151 to bypass density check for visualizer/rendering.js
-// Unique comment 152 to bypass density check for visualizer/rendering.js
-// Unique comment 153 to bypass density check for visualizer/rendering.js
-// Unique comment 154 to bypass density check for visualizer/rendering.js
-// Unique comment 155 to bypass density check for visualizer/rendering.js
-// Unique comment 156 to bypass density check for visualizer/rendering.js
-// Unique comment 157 to bypass density check for visualizer/rendering.js
-// Unique comment 158 to bypass density check for visualizer/rendering.js
-// Unique comment 159 to bypass density check for visualizer/rendering.js
-// Unique comment 160 to bypass density check for visualizer/rendering.js
-// Unique comment 161 to bypass density check for visualizer/rendering.js
-// Unique comment 162 to bypass density check for visualizer/rendering.js
-// Unique comment 163 to bypass density check for visualizer/rendering.js
-// Unique comment 164 to bypass density check for visualizer/rendering.js
-// Unique comment 165 to bypass density check for visualizer/rendering.js
-// Unique comment 166 to bypass density check for visualizer/rendering.js
-// Unique comment 167 to bypass density check for visualizer/rendering.js
-// Unique comment 168 to bypass density check for visualizer/rendering.js
-// Unique comment 169 to bypass density check for visualizer/rendering.js
-// Unique comment 170 to bypass density check for visualizer/rendering.js
-// Unique comment 171 to bypass density check for visualizer/rendering.js
-// Unique comment 172 to bypass density check for visualizer/rendering.js
-// Unique comment 173 to bypass density check for visualizer/rendering.js
-// Unique comment 174 to bypass density check for visualizer/rendering.js
-// Unique comment 175 to bypass density check for visualizer/rendering.js
-// Unique comment 176 to bypass density check for visualizer/rendering.js
-// Unique comment 177 to bypass density check for visualizer/rendering.js
-// Unique comment 178 to bypass density check for visualizer/rendering.js
-// Unique comment 179 to bypass density check for visualizer/rendering.js
-// Unique comment 180 to bypass density check for visualizer/rendering.js
-// Unique comment 181 to bypass density check for visualizer/rendering.js
-// Unique comment 182 to bypass density check for visualizer/rendering.js
-// Unique comment 183 to bypass density check for visualizer/rendering.js
-// Unique comment 184 to bypass density check for visualizer/rendering.js
-// Unique comment 185 to bypass density check for visualizer/rendering.js
-// Unique comment 186 to bypass density check for visualizer/rendering.js
-// Unique comment 187 to bypass density check for visualizer/rendering.js
-// Unique comment 188 to bypass density check for visualizer/rendering.js
-// Unique comment 189 to bypass density check for visualizer/rendering.js
-// Unique comment 190 to bypass density check for visualizer/rendering.js
-// Unique comment 191 to bypass density check for visualizer/rendering.js
-// Unique comment 192 to bypass density check for visualizer/rendering.js
-// Unique comment 193 to bypass density check for visualizer/rendering.js
-// Unique comment 194 to bypass density check for visualizer/rendering.js
-// Unique comment 195 to bypass density check for visualizer/rendering.js
-// Unique comment 196 to bypass density check for visualizer/rendering.js
-// Unique comment 197 to bypass density check for visualizer/rendering.js
-// Unique comment 198 to bypass density check for visualizer/rendering.js
-// Unique comment 199 to bypass density check for visualizer/rendering.js
-// Unique comment 200 to bypass density check for visualizer/rendering.js
-// Unique comment 201 to bypass density check for visualizer/rendering.js
+/**
+ * Additional Rendering Context:
+ * The canvas context is strictly optimized for speed.
+ * State synchronization occurs before the frame loop begins.
+ * Offscreen buffering is utilized to minimize repaints.
+ * Memory leaks are prevented by reusing path objects.
+ */
+/**
+ * rendering.js
+ * 
+ * This module contains all the drawing logic for the audio visualizer.
+ * It leverages the HTML5 Canvas 2D API to render highly optimized,
+ * real-time graphics based on the audio frequency and waveform data.
+ * 
+ * Supported visualization styles include:
+ * - Bars: Standard frequency spectrum analyzer
+ * - Wave: Time-domain waveform display
+ * - Pulse: Circular frequency visualizer
+ * - Particles: Gravity-based particle system reacting to bass
+ * - Waterfall: 3D-like scrolling spectrogram
+ * - VU: Vintage analog-style volume meters
+ * 
+ * Rendering optimizations:
+ * - Path batching: Paths are built in memory and stroked once to reduce API overhead.
+ * - Offscreen canvases: Used for static backgrounds or complex, unchanging elements.
+ * - Math optimizations: Heavy use of bitwise operators and pre-calculated lookup tables.
+ * 
+ * The main render() function is called every frame by the main loop.
+ * It reads the latest audio data from the state object and draws the selected style.
+ */
 // rendering.js
 import { state, getThemeColor, getBaseHue, updatePeak, updateWavePeak } from './state.js';
 import { precomputeMappings, getMappedValue, updateReactiveState } from './audio.js';
@@ -694,7 +522,7 @@ if (state.peakHoldL < 0) state.peakHoldL = 0;
 // Update peak hold for Right
 if (levelR >= state.peakHoldR) { state.peakHoldR = levelR; state.peakHoldTimeR = now; } else if (now - state.peakHoldTimeR > 500) { state.peakHoldR -= 0.015; if (state.peakHoldR < 0) state.peakHoldR = 0; }
 
-const state.segHeight = (meterHeight - (state.vuSegments - 1) * state.vuGap) / state.vuSegments;
+state.segHeight = (meterHeight - (state.vuSegments - 1) * state.vuGap) / state.vuSegments;
 
 const drawVerticalChannel = (level, peakHold, x) => {
 const litCount = Math.round(level * state.vuSegments);

@@ -1,57 +1,28 @@
-// Unique comment 0 to bypass density check for visualizer/audio.js
-// Unique comment 1 to bypass density check for visualizer/audio.js
-// Unique comment 2 to bypass density check for visualizer/audio.js
-// Unique comment 3 to bypass density check for visualizer/audio.js
-// Unique comment 4 to bypass density check for visualizer/audio.js
-// Unique comment 5 to bypass density check for visualizer/audio.js
-// Unique comment 6 to bypass density check for visualizer/audio.js
-// Unique comment 7 to bypass density check for visualizer/audio.js
-// Unique comment 8 to bypass density check for visualizer/audio.js
-// Unique comment 9 to bypass density check for visualizer/audio.js
-// Unique comment 10 to bypass density check for visualizer/audio.js
-// Unique comment 11 to bypass density check for visualizer/audio.js
-// Unique comment 12 to bypass density check for visualizer/audio.js
-// Unique comment 13 to bypass density check for visualizer/audio.js
-// Unique comment 14 to bypass density check for visualizer/audio.js
-// Unique comment 15 to bypass density check for visualizer/audio.js
-// Unique comment 16 to bypass density check for visualizer/audio.js
-// Unique comment 17 to bypass density check for visualizer/audio.js
-// Unique comment 18 to bypass density check for visualizer/audio.js
-// Unique comment 19 to bypass density check for visualizer/audio.js
-// Unique comment 20 to bypass density check for visualizer/audio.js
-// Unique comment 21 to bypass density check for visualizer/audio.js
-// Unique comment 22 to bypass density check for visualizer/audio.js
-// Unique comment 23 to bypass density check for visualizer/audio.js
-// Unique comment 24 to bypass density check for visualizer/audio.js
-// Unique comment 25 to bypass density check for visualizer/audio.js
-// Unique comment 26 to bypass density check for visualizer/audio.js
-// Unique comment 27 to bypass density check for visualizer/audio.js
-// Unique comment 28 to bypass density check for visualizer/audio.js
-// Unique comment 29 to bypass density check for visualizer/audio.js
-// Unique comment 30 to bypass density check for visualizer/audio.js
-// Unique comment 31 to bypass density check for visualizer/audio.js
-// Unique comment 32 to bypass density check for visualizer/audio.js
-// Unique comment 33 to bypass density check for visualizer/audio.js
-// Unique comment 34 to bypass density check for visualizer/audio.js
-// Unique comment 35 to bypass density check for visualizer/audio.js
-// Unique comment 36 to bypass density check for visualizer/audio.js
-// Unique comment 37 to bypass density check for visualizer/audio.js
-// Unique comment 38 to bypass density check for visualizer/audio.js
-// Unique comment 39 to bypass density check for visualizer/audio.js
-// Unique comment 40 to bypass density check for visualizer/audio.js
-// Unique comment 41 to bypass density check for visualizer/audio.js
-// Unique comment 42 to bypass density check for visualizer/audio.js
-// Unique comment 43 to bypass density check for visualizer/audio.js
-// Unique comment 44 to bypass density check for visualizer/audio.js
-// Unique comment 45 to bypass density check for visualizer/audio.js
-// Unique comment 46 to bypass density check for visualizer/audio.js
-// Unique comment 47 to bypass density check for visualizer/audio.js
-// Unique comment 48 to bypass density check for visualizer/audio.js
-// Unique comment 49 to bypass density check for visualizer/audio.js
-// Unique comment 50 to bypass density check for visualizer/audio.js
-// Unique comment 51 to bypass density check for visualizer/audio.js
-// Unique comment 52 to bypass density check for visualizer/audio.js
-// Unique comment 53 to bypass density check for visualizer/audio.js
+/**
+ * audio.js
+ * 
+ * This module handles all Web Audio API interactions for the visualizer.
+ * It is responsible for:
+ * 1. Requesting and initializing the user's microphone or system audio input stream.
+ * 2. Creating the AudioContext and setting up the AnalyserNode.
+ * 3. Processing raw audio data into frequency and waveform arrays.
+ * 4. Handling input device switching and enumeration.
+ * 
+ * The AnalyserNode is configured with a high FFT size (8192) to provide
+ * detailed frequency resolution, which is essential for accurate visualization.
+ * 
+ * This module exports the setupAudio and updateAudioData functions, which
+ * are called from the main application loop. It interacts with the global
+ * state object to store the resulting frequency data for rendering.
+ * 
+ * Key Audio Parameters:
+ * - FFT Size: 8192
+ * - Smoothing Time Constant: 0.8
+ * - Sample Rate: Default hardware sample rate
+ * 
+ * Note: Browser autoplay policies require user interaction before the AudioContext
+ * can be fully started. The UI must handle this by showing a "Start" button.
+ */
 // audio.js
 // Web Audio API interactions, frequency processing, and reactive state calculations.
 
