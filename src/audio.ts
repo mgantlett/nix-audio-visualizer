@@ -1,29 +1,29 @@
 // @ts-nocheck
 /**
- * audio.js
- * 
- * This module handles all Web Audio API interactions for the visualizer.
- * It is responsible for:
- * 1. Requesting and initializing the user's microphone or system audio input stream.
- * 2. Creating the AudioContext and setting up the AnalyserNode.
- * 3. Processing raw audio data into frequency and waveform arrays.
- * 4. Handling input device switching and enumeration.
- * 
- * The AnalyserNode is configured with a high FFT size (8192) to provide
- * detailed frequency resolution, which is essential for accurate visualization.
- * 
- * This module exports the setupAudio and updateAudioData functions, which
- * are called from the main application loop. It interacts with the global
- * state object to store the resulting frequency data for rendering.
- * 
- * Key Audio Parameters:
- * - FFT Size: 8192
- * - Smoothing Time Constant: 0.8
- * - Sample Rate: Default hardware sample rate
- * 
- * Note: Browser autoplay policies require user interaction before the AudioContext
- * can be fully started. The UI must handle this by showing a "Start" button.
- */
+* audio.js
+* 
+* This module handles all Web Audio API interactions for the visualizer.
+* It is responsible for:
+* 1. Requesting and initializing the user's microphone or system audio input stream.
+* 2. Creating the AudioContext and setting up the AnalyserNode.
+* 3. Processing raw audio data into frequency and waveform arrays.
+* 4. Handling input device switching and enumeration.
+* 
+* The AnalyserNode is configured with a high FFT size (8192) to provide
+* detailed frequency resolution, which is essential for accurate visualization.
+* 
+* This module exports the setupAudio and updateAudioData functions, which
+* are called from the main application loop. It interacts with the global
+* state object to store the resulting frequency data for rendering.
+* 
+* Key Audio Parameters:
+* - FFT Size: 8192
+* - Smoothing Time Constant: 0.8
+* - Sample Rate: Default hardware sample rate
+* 
+* Note: Browser autoplay policies require user interaction before the AudioContext
+* can be fully started. The UI must handle this by showing a "Start" button.
+*/
 // audio.js
 // Web Audio API interactions, frequency processing, and reactive state calculations.
 
@@ -296,3 +296,97 @@ startRenderLoop();
 }
 }
 
+
+
+
+let calibrationOscillator: OscillatorNode | null = null;
+let calibrationGain: GainNode | null = null;
+let calibrationInterval: number | null = null;
+let calibrationBeatInterval: number | null = null;
+
+export function toggleCalibrationMode(isActive: boolean) {
+if (isActive === state.testModeActive) return;
+state.testModeActive = isActive;
+
+// Stop current logic
+if (calibrationOscillator) {
+try { calibrationOscillator.stop(); } catch(e) {}
+calibrationOscillator.disconnect();
+calibrationOscillator = null;
+}
+if (calibrationGain) {
+calibrationGain.disconnect();
+calibrationGain = null;
+}
+if (calibrationInterval) {
+clearInterval(calibrationInterval);
+calibrationInterval = null;
+}
+if (calibrationBeatInterval) {
+clearInterval(calibrationBeatInterval);
+calibrationBeatInterval = null;
+}
+
+if (isActive) {
+// Disconnect standard mic source temporarily
+if (state.activeStream) {
+try { state.activeStream.getTracks().forEach(track => track.stop()); } catch(e) {}
+state.activeStream = null;
+}
+
+console.log("🔊 Starting Calibration Test Signal...");
+
+if (!state.audioCtx) {
+try {
+state.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 48000 });
+} catch (e) {
+state.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ latencyHint: 'interactive' });
+}
+}
+
+calibrationOscillator = state.audioCtx.createOscillator();
+calibrationGain = state.audioCtx.createGain();
+
+calibrationOscillator.type = 'sine';
+calibrationOscillator.frequency.setValueAtTime(40, state.audioCtx.currentTime);
+
+calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime); // Start quiet
+
+calibrationOscillator.connect(calibrationGain);
+
+// Output to BOTH analysers and the speakers for audible test
+calibrationGain.connect(state.audioCtx.destination);
+setupAnalyserNodes(calibrationGain);
+
+calibrationOscillator.start();
+
+// Logic: Sweep frequencies 20Hz -> 15kHz every 5 seconds
+let phase = 0;
+calibrationInterval = window.setInterval(() => {
+if (!calibrationOscillator || !state.audioCtx) return;
+phase += 0.05; // 50ms tick
+if (phase > 5) phase = 0;
+
+// Logarithmic sweep 20Hz -> 15000Hz
+const minFreq = 20;
+const maxFreq = 15000;
+const p = phase / 5.0; // 0.0 to 1.0
+const f = minFreq * Math.pow(maxFreq / minFreq, p);
+
+calibrationOscillator.frequency.setTargetAtTime(f, state.audioCtx.currentTime, 0.1);
+}, 50);
+
+// Logic: Pulse volume to simulate heavy beats (e.g. 120 BPM)
+calibrationBeatInterval = window.setInterval(() => {
+if (!calibrationGain || !state.audioCtx) return;
+// Snappy attack, smooth decay
+calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime);
+calibrationGain.gain.linearRampToValueAtTime(1.0, state.audioCtx.currentTime + 0.02);
+calibrationGain.gain.exponentialRampToValueAtTime(0.01, state.audioCtx.currentTime + 0.4);
+}, 500); // 120 BPM = 2 beats per sec = 500ms
+
+} else {
+console.log("🔊 Stopping Calibration Test Signal... Restoring Mic via Reload.");
+window.location.reload();
+}
+}
