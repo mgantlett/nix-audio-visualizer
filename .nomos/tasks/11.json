@@ -1,0 +1,23 @@
+{
+  "key": "11",
+  "type": "Bug",
+  "title": "Fix activeStream null crash in setupAnalyserNodes",
+  "status": "PLAN",
+  "assignee": "swarm:aider",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "priority:high"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T21:24:51.896445967-04:00",
+  "updated_at": "2026-07-16T21:25:19.708063163-04:00",
+  "description": "# Fix activeStream null crash in setupAnalyserNodes\n\n## 📝 User Story / Description\nWhen Calibration Mode activates, `state.activeStream` is intentionally nullified to shut down the physical microphone loopback. However, `setupAnalyserNodes` attempts to query `state.activeStream.getAudioTracks()` without null-checking, causing a `TypeError`.\n\n## ✅ Acceptance Criteria\n- [ ] `setupAnalyserNodes` safely handles null `state.activeStream` via optional chaining or explicit null checks.\n\n## 🛠️ Technical Notes\n- Update `src/audio.ts` at line 214 to `state.activeStream?.getAudioTracks()[0]?.getSettings();`\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- [ ] Clicking the Calibration Mode toggle activates test signals without crashing.\n\n- **Quality Debt Exemptions:**\n  - `complexity_limit: false`\n  - `doc_drift: false`\n  - `dry_candidate: false`\n\n",
+  "comments": [
+    "🔍 Ready for Review: Transitioning task 11 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+  ],
+  "dor_status": "",
+  "dod_status": ""
+}

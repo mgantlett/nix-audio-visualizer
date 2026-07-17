@@ -211,7 +211,7 @@ const splitter = state.audioCtx.createChannelSplitter(2);
 source.connect(splitter);
 splitter.connect(state.analyserL, 0);
 
-const trackSettings = state.activeStream.getAudioTracks()[0]?.getSettings();
+const trackSettings = state.activeStream?.getAudioTracks()[0]?.getSettings();
 const channelCount = trackSettings?.channelCount || source.channelCount;
 if (channelCount >= 2) {
 splitter.connect(state.analyserR, 1);
