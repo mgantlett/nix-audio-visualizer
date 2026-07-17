@@ -941,7 +941,7 @@ state.analyser.getByteTimeDomainData(state.waveArray);
 
 // --- Custom JS Smoothing EMA Engine ---
 const attackInertia = 0.05; // Snappy instant attack
-const releaseInertia = smoothingValue; // Smooth buttery release
+const releaseInertia = state.smoothingValue; // Smooth buttery release
 
 if (!smoothedDataArray || smoothedDataArray.length !== state.dataArray.length) {
 smoothedDataArray = new Float32Array(state.dataArray.length);

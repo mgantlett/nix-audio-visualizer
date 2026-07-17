@@ -260,8 +260,8 @@ const heightParam = parseInt(new URLSearchParams(window.location.search).get('he
 menuEl.style.bottom = `${heightParam + 5}px`;
 menuEl.style.display = state.menuOpen ? 'block' : 'none';
 
-if (!state.menuOpen && typeof toggleHelp === 'function') {
-toggleHelp(false);
+if (!state.menuOpen && typeof (window as any).toggleHelp === 'function') {
+(window as any).toggleHelp(false);
 }
 
 const menuHeight = menuEl.offsetHeight || 250;
@@ -564,7 +564,7 @@ const shortcutsCard = document.getElementById('shortcutsCard');
 const helpTrigger = document.getElementById('helpTrigger');
 const backToSettings = document.getElementById('backToSettings');
 
-toggleHelp = function(show) {
+(window as any).toggleHelp = function(show) {
 state.helpOpen = show;
 if (!settingsContent || !shortcutsCard || !helpTrigger) return;
 
@@ -585,14 +585,14 @@ helpTrigger.style.color = 'rgba(255, 255, 255, 0.5)';
 if (helpTrigger) {
 helpTrigger.addEventListener('click', (e) => {
 e.stopPropagation();
-toggleHelp(!state.helpOpen);
+(window as any).toggleHelp(!state.helpOpen);
 });
 }
 
 if (backToSettings) {
 backToSettings.addEventListener('click', (e) => {
 e.stopPropagation();
-toggleHelp(false);
+(window as any).toggleHelp(false);
 });
 }
 
@@ -662,7 +662,7 @@ else if (e.key === 'h' || e.key === 'H') {
 // 'Escape' key hides menu or help card
 else if (e.key === 'Escape') {
 if (state.helpOpen) {
-toggleHelp(false);
+(window as any).toggleHelp(false);
 } else {
 toggleMenu(false);
 }
@@ -670,7 +670,7 @@ toggleMenu(false);
 // '?' or '/' toggles help card
 else if (e.key === '?' || e.key === '/') {
 e.preventDefault();
-toggleHelp(!state.helpOpen);
+(window as any).toggleHelp(!state.helpOpen);
 }
 // 's' key cycles style
 else if (e.key === 's' || e.key === 'S') {
