@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Compile TypeScript to JS
 echo "🔨 Compiling TypeScript..."
+chmod u+w "$ROOT_DIR/visualizer"
 npx tsc || { echo "❌ TypeScript compilation failed!"; exit 1; }
 
 # Run python desktop wrapper inside or outside the development nix-shell

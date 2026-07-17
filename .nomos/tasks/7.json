@@ -1,0 +1,23 @@
+{
+  "key": "7",
+  "type": "Bug",
+  "title": "Fix tsc substrate lock",
+  "status": "PLAN",
+  "assignee": "swarm:aider",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "priority:critical"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T20:31:02.861598618-04:00",
+  "updated_at": "2026-07-16T20:31:34.415770524-04:00",
+  "description": "# Fix Substrate Lock Write Permissions for TypeScript Compiler\n\n## 📝 User Story / Description\nThe TypeScript compiler (`npx tsc`) fails with `Permission denied` during application startup (`bin/start-visualizer`) because the Nomos GitOps substrate lock automatically removes write permissions from the `visualizer/` directory after a push. The compiler needs write access to output the `.js` files.\n\n## ✅ Acceptance Criteria\n- [ ] Modify `bin/start-visualizer` to temporarily grant write permissions to `visualizer/` before running `tsc`.\n- [ ] Ensure permissions are safely handled.\n- [ ] The visualizer starts successfully without `Permission denied` errors.\n\n## 🛠️ Technical Notes\n- Use `chmod u+w \"$ROOT_DIR/visualizer\"` before `npx tsc`.\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- [ ] Run `bin/start-visualizer` and verify it compiles and launches successfully.\n\n- **Quality Debt Exemptions:**\n  - `complexity_limit: false`\n  - `doc_drift: false`\n  - `dry_candidate: false`\n\n",
+  "comments": [
+    "🔍 Ready for Review: Transitioning task 7 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+  ],
+  "dor_status": "",
+  "dod_status": ""
+}
