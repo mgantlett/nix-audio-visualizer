@@ -1,0 +1,24 @@
+{
+  "key": "12",
+  "type": "Feature",
+  "title": "Enhance Calibration Diagnostic Modes",
+  "status": "PLAN",
+  "assignee": "swarm:aider",
+  "min_tier": 0,
+  "engine": "",
+  "sequence": 0,
+  "points": 2,
+  "labels": [
+    "priority:medium"
+  ],
+  "blocked_by": null,
+  "created_at": "2026-07-16T21:34:02.331727801-04:00",
+  "updated_at": "2026-07-16T21:36:04.454061924-04:00",
+  "description": "# Enhance Calibration Diagnostic Modes\n\n## 📝 User Story / Description\nThe current Calibration Signal sweeps too fast to visually track high-frequency rendering accuracy on the VFD. Also, coupling the sweep with a pulsing beat makes it difficult to tune peak decay vs beat sensitivity independently. \nThe user requires three distinct diagnostic modes: Slow Sweep (20Hz-22kHz over 15s), Deep Bass Pulse (40Hz @ 120BPM), and Pink Noise (full spectrum static).\n\n## ✅ Acceptance Criteria\n- [ ] A dropdown menu allows selection of `off`, `sweep`, `beat`, and `noise` modes.\n- [ ] Sweep mode sweeps from 20Hz to 22,000Hz over 15 seconds.\n- [ ] Beat mode generates 40Hz with aggressive 500ms volume envelopes.\n- [ ] Noise mode generates an `AudioBuffer` of pink noise.\n\n## 🛠️ Technical Notes\n- Replace `#testSignalToggle` with `#testSignalSelect` in `index.html`.\n- Modify `state.testMode` to accept string.\n- Modify `toggleCalibrationMode(mode: string)` in `audio.ts` to switch behaviors using standard `window.setInterval` and Web Audio nodes.\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- [ ] Each option in the diagnostic dropdown isolates a specific audio profile without crashing.\n\n- **Quality Debt Exemptions:**\n  - `complexity_limit: false`\n  - `doc_drift: false`\n  - `dry_candidate: false`\n\n",
+  "comments": [
+    "⚠️  Definition of Done (DoD) verification failed for task 12:\n- Refactor Checks: specification check failed: monolithic file bounds or duplicate code limits violated\n    \u001b[1;33m💡 Guidance:\u001b[0m Run 'bin/nomos verify' locally to check duplication report. Consolidate duplicate blocks or use quality_debt bypasses.\n\nAI progress is temporarily blocked until these quality gates pass.",
+    "🔍 Ready for Review: Transitioning task 12 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+  ],
+  "dor_status": "",
+  "dod_status": ""
+}

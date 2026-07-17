@@ -407,12 +407,12 @@ updateHudDisplay();
 });
 }
 
-const testSignalToggle = (document.getElementById('testSignalToggle') as HTMLInputElement);
-if (testSignalToggle) {
-testSignalToggle.checked = state.testModeActive;
-testSignalToggle.addEventListener('change', (e) => {
-toggleCalibrationMode((e.target as HTMLInputElement).checked);
-});
+const testSignalSelect = (document.getElementById('testSignalSelect') as HTMLSelectElement);
+if (testSignalSelect) {
+    testSignalSelect.value = state.testMode;
+    testSignalSelect.addEventListener('change', (e) => {
+        toggleCalibrationMode((e.target as HTMLSelectElement).value);
+    });
 }
 
 const hudThemeSelect = document.getElementById('hudThemeSelect');

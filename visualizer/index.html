@@ -104,8 +104,13 @@ Do not add complex nested layouts here; keep the DOM minimal for performance.
 
 <!-- Music HUD Settings -->
 <div class="menu-group">
-    <label for="testSignalToggle">Calibration Signal:</label>
-    <input type="checkbox" id="testSignalToggle">
+    <label for="testSignalSelect">Diagnostic Mode:</label>
+    <select id="testSignalSelect">
+        <option value="off">Off (Live Mic)</option>
+        <option value="sweep">Slow Sweep (VFD)</option>
+        <option value="beat">Bass Pulse (Beat)</option>
+        <option value="noise">Pink Noise (Glow)</option>
+    </select>
 </div>
 
 <div class="menu-group">

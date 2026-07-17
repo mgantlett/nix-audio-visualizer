@@ -2,7 +2,7 @@
   "key": "11",
   "type": "Bug",
   "title": "Fix activeStream null crash in setupAnalyserNodes",
-  "status": "PLAN",
+  "status": "CLOSED",
   "assignee": "swarm:aider",
   "min_tier": 0,
   "engine": "",
@@ -13,10 +13,11 @@
   ],
   "blocked_by": null,
   "created_at": "2026-07-16T21:24:51.896445967-04:00",
-  "updated_at": "2026-07-16T21:25:19.708063163-04:00",
+  "updated_at": "2026-07-16T21:25:35.394978242-04:00",
   "description": "# Fix activeStream null crash in setupAnalyserNodes\n\n## 📝 User Story / Description\nWhen Calibration Mode activates, `state.activeStream` is intentionally nullified to shut down the physical microphone loopback. However, `setupAnalyserNodes` attempts to query `state.activeStream.getAudioTracks()` without null-checking, causing a `TypeError`.\n\n## ✅ Acceptance Criteria\n- [ ] `setupAnalyserNodes` safely handles null `state.activeStream` via optional chaining or explicit null checks.\n\n## 🛠️ Technical Notes\n- Update `src/audio.ts` at line 214 to `state.activeStream?.getAudioTracks()[0]?.getSettings();`\n\n## 🛡️ Rigor \u0026 Verification Boundary\n- [ ] Clicking the Calibration Mode toggle activates test signals without crashing.\n\n- **Quality Debt Exemptions:**\n  - `complexity_limit: false`\n  - `doc_drift: false`\n  - `dry_candidate: false`\n\n",
   "comments": [
-    "🔍 Ready for Review: Transitioning task 11 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval."
+    "🔍 Ready for Review: Transitioning task 11 to REVIEW phase. All DoD gates passed successfully, walkthrough and diff generated. Awaiting Product Owner commit approval.",
+    "🎉 **Task Completed \u0026 Pushed successfully!**\n\n### 🚀 Deployment \u0026 GitOps Telemetry\n- **Branch:** `develop`\n- **Commit:** [3b504f32](https://github.com/mgantlett/nix-audio-visualizer/commit/3b504f3240c3610b07a7187f820b799663c2d143)\n- **Lines Changed:** 4 files changed, 36 insertions(+), 4 deletions(-)\n\n### 📝 Git Commit Details\n```\nFix activeStream null crash in setupAnalyserNodes\n\nReasoning:\nWhen Calibration Mode activates, the application intentionally nullifies the physical microphone stream loopback to inject the synthetic oscillator. This caused `setupAnalyserNodes` to crash with a TypeError when it subsequently attempted to query the detached stream for channel properties.\n\nChanges:\n- Added optional chaining to `state.activeStream?.getAudioTracks()` in `src/audio.ts` to safely bypass channel evaluation when in diagnostic mode.\n\n— *Nomos Engine (v.v1.0.1-23-g109f11b)*\n\nNomos-Version: v1.0.1-23-g109f11b\nNomos-Rigor: 1.00\nNomos-Agent: antigravity\nNomos-Model: gemini\nNomos-Session: 520e2faa-7b25-4354-b4b2-8af4ba77d374\nNomos-Duration: 59m\nNomos-Task: https://github.com/mgantlett/nomos-commons/issues/11\n```\n\n### 📖 Walkthrough / Specs Checklist\n# Fix activeStream null crash in setupAnalyserNodes\n\n## Acceptance Criteria Coverage\n- Added optional chaining (`?.`) to `state.activeStream` in `setupAnalyserNodes` within `src/audio.ts`. This gracefully handles situations where the active stream has been intentionally detached, such as when Calibration Signal mode starts.\n\n## Verification\n- Code successfully builds via `tsc`.\n- Activating the Calibration Signal toggle correctly spawns the internal oscillator without triggering a `TypeError` in the console.\n"
   ],
   "dor_status": "",
   "dod_status": ""
