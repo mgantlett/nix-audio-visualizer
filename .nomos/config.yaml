@@ -1,4 +1,4 @@
 
 env: development
-task_repo: mgantlett/nomos-commons
+task_repo: mgantlett/nix-audio-visualizer
 db_path: .nomos/cache.db

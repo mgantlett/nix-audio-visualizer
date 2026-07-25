@@ -1,0 +1,1 @@
+Initialize global nomos binary and clean up legacy submodules

@@ -1,0 +1,17 @@
+{
+  "agent": "",
+  "agent_tier": "",
+  "agent_type": "",
+  "commit_approved": "false",
+  "current_phase": "REVIEW",
+  "dod_failure_count": 0,
+  "phase_entered_at": "2026-07-25T16:30:06-04:00",
+  "plan_approved": "true",
+  "prev_phase": "EDIT",
+  "session_commits": 0,
+  "session_started_at": "",
+  "task_id": "",
+  "waiting_on_human": "true",
+  "compact_context": false,
+  "phase_token": ""
+}
