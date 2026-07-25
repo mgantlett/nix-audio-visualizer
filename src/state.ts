@@ -127,6 +127,7 @@ wavePeakLevel: 0.1,
 barBinMappings: [],
 eqBinMappings: [],
 waterfallBinMappings: [],
+vfdBinMappings: [],
 
 // Global Config
 currentStyle: urlParams.get('style') || 'bars',

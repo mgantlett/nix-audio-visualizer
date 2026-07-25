@@ -46,15 +46,13 @@ const { start, end } = mapping;
 if (end - start < 1.0) {
 return getInterpolatedBinValue((start + end) / 2, arr) / 255;
 } else {
-let sum = 0;
-let count = 0;
+let max = 0;
 const startBin = Math.floor(start);
 const endBin = Math.ceil(end);
 for (let b = startBin; b <= endBin && b < arr.length; b++) {
-sum += arr[b];
-count++;
+if (arr[b] > max) max = arr[b];
 }
-return (sum / (count || 1)) / 255;
+return max / 255;
 }
 }
 
@@ -79,9 +77,10 @@ return mappings;
 }
 
 export function precomputeMappings() {
-state.barBinMappings = buildMapping(state.barsCount);
-state.eqBinMappings = buildMapping(state.eqColumns);
-state.waterfallBinMappings = buildMapping(128);
+  state.barBinMappings = buildMapping(state.barsCount);
+  state.eqBinMappings = buildMapping(state.eqColumns);
+  state.waterfallBinMappings = buildMapping(128);
+  state.vfdBinMappings = buildMapping(state.vfdColumns);
 }
 
 const SMOOTH = 0.7;
@@ -305,6 +304,22 @@ let calibrationInterval: number | null = null;
 let calibrationBeatInterval: number | null = null;
 let calibrationNoiseBuffer: AudioBufferSourceNode | null = null;
 
+/**
+ * Initializes the AudioContext if not already created.
+ */
+function initAudioContext() {
+    if (state.audioCtx) return;
+    try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const options: any = { latencyHint: 'interactive', sampleRate: 48000 };
+        state.audioCtx = new AudioCtx(options);
+    } catch (e) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const options: any = { latencyHint: 'interactive' };
+        state.audioCtx = new AudioCtx(options);
+    }
+}
+
 export function toggleCalibrationMode(mode: string) {
     if (mode === state.testMode) return;
     state.testMode = mode;
@@ -347,79 +362,92 @@ export function toggleCalibrationMode(mode: string) {
 
     console.log(`🔊 Starting Calibration Test Signal (Mode: ${mode})...`);
 
-    if (!state.audioCtx) {
-        try {
-            state.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 48000 });
-        } catch (e) {
-            state.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ latencyHint: 'interactive' });
-        }
-    }
+    initAudioContext();
 
     calibrationGain = state.audioCtx.createGain();
     calibrationGain.connect(state.audioCtx.destination);
     setupAnalyserNodes(calibrationGain);
 
     if (mode === 'sweep') {
-        calibrationOscillator = state.audioCtx.createOscillator();
-        calibrationOscillator.type = 'sine';
-        calibrationOscillator.frequency.setValueAtTime(20, state.audioCtx.currentTime);
-        calibrationGain.gain.setValueAtTime(0.8, state.audioCtx.currentTime); 
-        calibrationOscillator.connect(calibrationGain);
-        calibrationOscillator.start();
-
-        // Slow Sweep frequencies 20Hz -> 22kHz every 15 seconds
-        let phase = 0;
-        calibrationInterval = window.setInterval(() => {
-            if (!calibrationOscillator || !state.audioCtx) return;
-            phase += 0.05; // 50ms tick
-            if (phase > 15) phase = 0;
-            const minFreq = 20;
-            const maxFreq = 22000;
-            const p = phase / 15.0;
-            const f = minFreq * Math.pow(maxFreq / minFreq, p);
-            calibrationOscillator.frequency.setTargetAtTime(f, state.audioCtx.currentTime, 0.1);
-        }, 50);
-
+        startSweep();
     } else if (mode === 'beat') {
-        calibrationOscillator = state.audioCtx.createOscillator();
-        calibrationOscillator.type = 'sine';
-        calibrationOscillator.frequency.setValueAtTime(40, state.audioCtx.currentTime); // Deep Bass
-        calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime); 
-        calibrationOscillator.connect(calibrationGain);
-        calibrationOscillator.start();
-
-        // Pulse volume to simulate heavy beats (120 BPM)
-        calibrationBeatInterval = window.setInterval(() => {
-            if (!calibrationGain || !state.audioCtx) return;
-            calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime);
-            calibrationGain.gain.linearRampToValueAtTime(1.0, state.audioCtx.currentTime + 0.02);
-            calibrationGain.gain.exponentialRampToValueAtTime(0.01, state.audioCtx.currentTime + 0.4);
-        }, 500); 
-
+        startBeat();
     } else if (mode === 'noise') {
-        const bufferSize = state.audioCtx.sampleRate * 2; // 2 seconds
-        const noiseBuffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        let b0, b1, b2, b3, b4, b5, b6;
-        b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
-        // Paul Kellet's Pink Noise algorithm
-        for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            b0 = 0.99886 * b0 + white * 0.0555179;
-            b1 = 0.99332 * b1 + white * 0.0750759;
-            b2 = 0.96900 * b2 + white * 0.1538520;
-            b3 = 0.86650 * b3 + white * 0.3104856;
-            b4 = 0.55000 * b4 + white * 0.5329522;
-            b5 = -0.7616 * b5 - white * 0.0168980;
-            output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-            output[i] *= 0.11; // compensation
-            b6 = white * 0.115926;
-        }
-        calibrationNoiseBuffer = state.audioCtx.createBufferSource();
-        calibrationNoiseBuffer.buffer = noiseBuffer;
-        calibrationNoiseBuffer.loop = true;
-        calibrationGain.gain.setValueAtTime(1.0, state.audioCtx.currentTime);
-        calibrationNoiseBuffer.connect(calibrationGain);
-        calibrationNoiseBuffer.start();
+        startNoise();
     }
+}
+
+let sweepPhase = 0;
+function runSweepTick() {
+    if (!calibrationOscillator || !state.audioCtx) return;
+    sweepPhase += 0.05;
+    sweepPhase = sweepPhase > 15 ? 0 : sweepPhase;
+    calibrationOscillator.frequency.setTargetAtTime(20 * Math.pow(1100, sweepPhase / 15.0), state.audioCtx.currentTime, 0.1);
+}
+
+/**
+ * Initializes and starts the slow sweep calibration signal.
+ * The sweep goes from 20Hz to 22kHz over a 15 second interval.
+ */
+function startSweep() {
+    if (!state.audioCtx || !calibrationGain) return;
+    calibrationOscillator = state.audioCtx.createOscillator();
+    calibrationOscillator.type = 'sine';
+    calibrationOscillator.frequency.setValueAtTime(20, state.audioCtx.currentTime);
+    calibrationGain.gain.setValueAtTime(0.8, state.audioCtx.currentTime); 
+    calibrationOscillator.connect(calibrationGain);
+    calibrationOscillator.start();
+    sweepPhase = 0;
+    calibrationInterval = window.setInterval(runSweepTick, 50);
+}
+
+function runBeatTick() {
+    if (!calibrationGain || !state.audioCtx) return;
+    calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime);
+    calibrationGain.gain.linearRampToValueAtTime(1.0, state.audioCtx.currentTime + 0.02);
+    calibrationGain.gain.exponentialRampToValueAtTime(0.01, state.audioCtx.currentTime + 0.4);
+}
+
+/**
+ * Initializes and starts the beat calibration signal.
+ * Pulses a 40Hz bass tone at 120 BPM to simulate heavy beats.
+ */
+function startBeat() {
+    if (!state.audioCtx || !calibrationGain) return;
+    calibrationOscillator = state.audioCtx.createOscillator();
+    calibrationOscillator.type = 'sine';
+    calibrationOscillator.frequency.setValueAtTime(40, state.audioCtx.currentTime);
+    calibrationGain.gain.setValueAtTime(0, state.audioCtx.currentTime); 
+    calibrationOscillator.connect(calibrationGain);
+    calibrationOscillator.start();
+    calibrationBeatInterval = window.setInterval(runBeatTick, 500);
+}
+
+/**
+ * Initializes and starts the pink noise calibration signal.
+ * Uses Paul Kellet's algorithm to generate a 2-second looping pink noise buffer.
+ */
+function startNoise() {
+    if (!state.audioCtx || !calibrationGain) return;
+    const bufferSize = state.audioCtx.sampleRate * 2;
+    const noiseBuffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+        const w = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + w * 0.0555179;
+        b1 = 0.99332 * b1 + w * 0.0750759;
+        b2 = 0.96900 * b2 + w * 0.1538520;
+        b3 = 0.86650 * b3 + w * 0.3104856;
+        b4 = 0.55000 * b4 + w * 0.5329522;
+        b5 = -0.7616 * b5 - w * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+        b6 = w * 0.115926;
+    }
+    calibrationNoiseBuffer = state.audioCtx.createBufferSource();
+    calibrationNoiseBuffer.buffer = noiseBuffer;
+    calibrationNoiseBuffer.loop = true;
+    calibrationGain.gain.setValueAtTime(1.0, state.audioCtx.currentTime);
+    calibrationNoiseBuffer.connect(calibrationGain);
+    calibrationNoiseBuffer.start();
 }
