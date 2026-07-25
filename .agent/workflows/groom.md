@@ -1,1 +1,0 @@
-../../.nomos-commons/.agent/workflows/groom.md

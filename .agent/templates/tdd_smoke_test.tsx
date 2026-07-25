@@ -1,1 +1,0 @@
-../../.ado-core/.agent/templates/tdd_smoke_test.tsx

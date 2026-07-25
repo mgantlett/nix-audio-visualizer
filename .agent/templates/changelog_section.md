@@ -1,1 +1,0 @@
-../../.ado-core/.agent/templates/changelog_section.md

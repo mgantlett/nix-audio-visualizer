@@ -1,1 +1,0 @@
-../../../.ado-core/.agent/templates/hooks/pre-push.sh

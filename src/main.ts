@@ -300,6 +300,12 @@ const savedHudShow = localStorage.getItem('visualizer-hud-show');
 if (savedHudShow !== null) {
 state.hudShow = savedHudShow === 'true';
 }
+const savedAlwaysOnTop = localStorage.getItem('visualizer-always-on-top');
+if (savedAlwaysOnTop !== null) {
+state.alwaysOnTop = savedAlwaysOnTop === 'true';
+}
+document.title = JSON.stringify({ action: "set-always-on-top", value: state.alwaysOnTop });
+
 const savedHudTheme = localStorage.getItem('visualizer-hud-theme');
 if (savedHudTheme) {
 state.hudTheme = savedHudTheme;
@@ -404,6 +410,16 @@ hudShowToggle.addEventListener('change', (e) => {
 state.hudShow = (e.target as HTMLInputElement).checked;
 localStorage.setItem('visualizer-hud-show', state.hudShow ? 'true' : 'false');
 updateHudDisplay();
+});
+}
+
+const alwaysOnTopToggle = (document.getElementById('alwaysOnTopToggle') as HTMLInputElement);
+if (alwaysOnTopToggle) {
+alwaysOnTopToggle.checked = state.alwaysOnTop;
+alwaysOnTopToggle.addEventListener('change', (e) => {
+state.alwaysOnTop = (e.target as HTMLInputElement).checked;
+localStorage.setItem('visualizer-always-on-top', state.alwaysOnTop ? 'true' : 'false');
+document.title = JSON.stringify({ action: "set-always-on-top", value: state.alwaysOnTop });
 });
 }
 

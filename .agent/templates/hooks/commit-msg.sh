@@ -1,1 +1,0 @@
-../../../.ado-core/.agent/templates/hooks/commit-msg.sh

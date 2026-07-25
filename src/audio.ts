@@ -80,7 +80,6 @@ export function precomputeMappings() {
   state.barBinMappings = buildMapping(state.barsCount);
   state.eqBinMappings = buildMapping(state.eqColumns);
   state.waterfallBinMappings = buildMapping(128);
-  state.vfdBinMappings = buildMapping(state.vfdColumns);
 }
 
 const SMOOTH = 0.7;

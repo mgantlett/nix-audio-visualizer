@@ -1,1 +1,0 @@
-../../.ado-core/.agent/templates/system_prompt_redirector.md

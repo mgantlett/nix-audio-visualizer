@@ -50,6 +50,7 @@ def inhibit_sleep():
 menu_open = False
 visualizer_height = 45
 menu_height = 250
+is_always_on_top = False
 
 # Setup initial click-through window shape
 visualizer_position = "bottom"
@@ -132,11 +133,19 @@ def handle_media_control(cmd):
         except Exception:
             pass
 
+def _handle_always_on_top(data, window):
+    global is_always_on_top
+    is_always_on_top = bool(data.get("value", False))
+    if not menu_open:
+        layer = GtkLayerShell.Layer.TOP if is_always_on_top else GtkLayerShell.Layer.BOTTOM
+        GtkLayerShell.set_layer(window, layer)
+
 def _handle_menu_toggle(data, window):
     global menu_open, menu_height
     menu_open = bool(data.get("open", False))
     menu_height = int(data.get("menuHeight", 250))
-    GtkLayerShell.set_layer(window, GtkLayerShell.Layer.TOP if menu_open else GtkLayerShell.Layer.BOTTOM)
+    layer = GtkLayerShell.Layer.TOP if (menu_open or is_always_on_top) else GtkLayerShell.Layer.BOTTOM
+    GtkLayerShell.set_layer(window, layer)
     if visualizer_position in ["top", "bottom"]:
         target_height = (visualizer_height + menu_height + 15) if menu_open else visualizer_height
         window.set_size_request(0, target_height)
@@ -162,6 +171,7 @@ def on_title_changed(webview, pspec, window):
         action = data.get("action")
         if action == "menu-toggle": _handle_menu_toggle(data, window)
         elif action == "menu-resize": _handle_menu_resize(data, window)
+        elif action == "set-always-on-top": _handle_always_on_top(data, window)
         elif action == "close": Gtk.main_quit()
         elif action == "media-control": handle_media_control(data.get("command"))
     except Exception: pass

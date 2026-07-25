@@ -24,3 +24,7 @@ __pycache__/
 # Node and TS Build Artifacts
 node_modules/
 visualizer/*.js
+
+# Nomos ignores
+.nomos/tasks/
+.nomos/walkthroughs/

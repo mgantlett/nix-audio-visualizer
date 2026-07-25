@@ -640,23 +640,20 @@ if (state.vfdPeaks.length !== columns) {
 state.vfdPeaks = new Array(columns).fill(0);
 }
 
-if (!state.vfdBinMappings || state.vfdBinMappings.length !== columns) {
-precomputeMappings();
-}
+const step = Math.ceil(state.dataArray.length / columns);
 
 const renderVFD = (arr, xOffset, isMirrored) => {
-let frameMax = 0;
 for (let i = 0; i < columns; i++) {
-const mapping = state.vfdBinMappings[i];
-const val = mapping ? getMappedValue(mapping, arr) : 0;
-if (val > frameMax) frameMax = val;
+let sum = 0;
+let count = 0;
+const startBin = i * step;
+const endBin = Math.min(arr.length - 1, (i + 1) * step);
+for (let j = startBin; j < endBin; j++) {
+sum += arr[j] || 0;
+count++;
 }
-updatePeak(frameMax);
-
-for (let i = 0; i < columns; i++) {
-const mapping = state.vfdBinMappings[i];
-const rawValue = mapping ? getMappedValue(mapping, arr) : 0;
-const level = Math.min(1.0, (rawValue / (state.peakLevel * 1.0)) * state.sensitivityMultiplier);
+const average = count > 0 ? sum / count : 0;
+const level = Math.min(1.0, (average / 255.0) * state.sensitivityMultiplier);
 
 const litSegments = Math.round(level * totalSegments);
 
