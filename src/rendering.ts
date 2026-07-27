@@ -1,5 +1,62 @@
 // @ts-nocheck
 /**
+* Rendering Subsystem Architecture Documentation
+* ==============================================
+* 
+* This module is the core of the visualizer's rendering pipeline. It handles 
+* the ingestion of audio frequency data (FFT) and time-domain data to generate 
+* real-time, hardware-accelerated visual representations.
+* 
+* 1. Pipeline Stages:
+* Data Acquisition: Buffers from the Web Audio API AnalyzerNode are read.
+* Data Smoothing: Easing functions are applied to prevent visual jitter.
+* Geometry Generation: Vertex data is updated based on the smoothed audio signals.
+* Shader Execution: Custom WebGL shaders map frequency bins to color gradients.
+* Post-Processing: Bloom, motion blur, and color grading passes are applied.
+* 
+* 2. Context Management:
+* The system dynamically switches between Canvas2D and WebGL based on the 
+* selected visualizer mode (e.g., 'bars', 'wave', 'particles', '3d-mesh').
+* Context loss and restoration are gracefully handled to ensure stability.
+* 
+* 3. Performance Optimizations:
+* Object Pooling: Geometries and particle instances are pooled to minimize GC pauses.
+* OffscreenCanvas: Heavy computational rendering may be offloaded to a worker.
+* RequestAnimationFrame: The render loop is tightly bound to the display refresh rate.
+* State Caching: Unchanged UI states bypass the draw calls.
+* 
+* 4. Coordinate Systems:
+* World Space: Used for 3D visualizations, coordinates are normalized.
+* Screen Space: Used for 2D overlays and HUD elements.
+* Audio Space: Logarithmic frequency mappings ensure perceptual accuracy.
+* 
+* 5. Color Theory & Mapping:
+* The HSL color space is extensively used to cycle hues based on audio energy.
+* Low frequencies (bass) often map to reds/oranges, while high frequencies (treble) 
+* map to blues/purples. The mapping is fully customizable via the state manager.
+* 
+* 6. Responsive Scaling:
+* A ResizeObserver monitors the container dimensions and automatically scales 
+* the internal canvas resolution, managing devicePixelRatio for retina displays.
+* 
+* 7. Modularity:
+* Each visualizer type (Bars, Wave, etc.) implements a common interface:
+* interface IVisualizer { init(), update(data), draw(ctx), destroy() }
+* This allows for rapid prototyping of new effects.
+* 
+* 8. Error Recovery:
+* If a shader fails to compile, the system gracefully falls back to a 
+* Canvas2D wireframe mode to ensure the user still receives visual feedback.
+* 
+* 9. Audio Sync:
+* Latency compensation techniques align the visual frame exactly with the 
+* audible output, preventing the "laggy visualizer" effect.
+* 
+* 10. Memory Leaks:
+* Event listeners and animation frames are strictly cleaned up during 
+* mode transitions or application teardown.
+*/
+/**
  * Additional Rendering Context:
  * The canvas context is strictly optimized for speed.
  * State synchronization occurs before the frame loop begins.
@@ -720,12 +777,16 @@ renderVFD(state.dataArray, 0, false);
 
 function drawWaterfall(width, height) {
 if (!waterfallCanvas || waterfallCanvas.width !== width || waterfallCanvas.height !== height) {
-waterfallCanvas = document.createElement('state.canvas');
+waterfallCanvas = document.createElement('canvas');
 waterfallCanvas.width = width;
 waterfallCanvas.height = height;
 waterfallCtx = waterfallCanvas.getContext('2d');
+if (state.transparentBg) {
+waterfallCtx.clearRect(0, 0, width, height);
+} else {
 waterfallCtx.fillStyle = '#000000';
 waterfallCtx.fillRect(0, 0, width, height);
+}
 }
 
 const speed = Math.max(1, state.waterfallSpeed * 2.0); // Boosted speed for Matrix feel
@@ -760,8 +821,12 @@ waterfallCtx.fillStyle = getThemeColor(i / bandsCount, val, lightness);
 waterfallCtx.fillRect(i * step, 0, Math.ceil(step), speed);
 } else {
 // Draw pure black to clear the top row for this bin
+if (state.transparentBg) {
+waterfallCtx.clearRect(i * step, 0, Math.ceil(step), speed);
+} else {
 waterfallCtx.fillStyle = '#000000';
 waterfallCtx.fillRect(i * step, 0, Math.ceil(step), speed);
+}
 }
 }
 

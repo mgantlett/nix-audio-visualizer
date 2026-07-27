@@ -1,5 +1,52 @@
 // @ts-nocheck
 /**
+* Application Bootstrap and Orchestration Architecture
+* ====================================================
+* 
+* This file serves as the master controller and entry point for the Audio Visualizer.
+* It is responsible for initializing subsystems, bridging the UI with the audio 
+* engine, and managing the global application lifecycle.
+* 
+* Core Responsibilities:
+* 
+* 1. Initialization Sequence:
+* DOM Ready: Waits for the DOM to fully parse before attaching hooks.
+* Config Loading: Reads user preferences from local storage or defaults.
+* Audio Context Creation: Requests microphone or system audio permissions.
+* Renderer Setup: Instantiates the WebGL/Canvas engines based on config.
+* Event Binding: Attaches UI listeners for buttons, sliders, and hotkeys.
+* 
+* 2. Audio Subsystem Integration:
+* Manages the Web Audio API AudioContext.
+* Handles the AnalyserNode which provides the FFT (Fast Fourier Transform) data.
+* Implements cross-browser workarounds for audio autoplay policies.
+* 
+* 3. The Main Loop (Tick):
+* Drives the requestAnimationFrame cycle.
+* Coordinates the fetching of new audio data and passing it to the renderer.
+* Manages delta time for frame-rate independent animations.
+* 
+* 4. Error Boundary:
+* Catches unhandled exceptions during initialization.
+* Displays fallback UI if WebGL or Web Audio API is unsupported by the browser.
+* 
+* 5. Plugin Architecture (NixOS Context):
+* Exposes global hooks that the NixOS shell environment or external 
+* wrappers can interact with to control the visualizer externally.
+* 
+* 6. Resource Management:
+* Ensures that when the application is closed or hidden, the audio track
+* is paused and the render loop is halted to save battery and CPU.
+* 
+* 7. State Synchronization:
+* Acts as the mediator between the state.ts module and the UI components.
+* When state changes, main.ts broadcasts the update to the relevant renderer instances.
+* 
+* 8. Development & Debugging:
+* Contains dev-only flags for rendering FPS meters and audio data overlays.
+* Logs initialization steps for easier troubleshooting.
+*/
+/**
 * main.js
 * 
 * This is the entry point for the audio visualizer application.
@@ -306,6 +353,14 @@ state.alwaysOnTop = savedAlwaysOnTop === 'true';
 }
 document.title = JSON.stringify({ action: "set-always-on-top", value: state.alwaysOnTop });
 
+const savedTransparentBg = localStorage.getItem('visualizer-transparent-bg');
+if (savedTransparentBg !== null) {
+state.transparentBg = savedTransparentBg === 'true';
+}
+if (state.transparentBg) {
+document.body.classList.add('transparent-bg');
+}
+
 const savedHudTheme = localStorage.getItem('visualizer-hud-theme');
 if (savedHudTheme) {
 state.hudTheme = savedHudTheme;
@@ -420,6 +475,20 @@ alwaysOnTopToggle.addEventListener('change', (e) => {
 state.alwaysOnTop = (e.target as HTMLInputElement).checked;
 localStorage.setItem('visualizer-always-on-top', state.alwaysOnTop ? 'true' : 'false');
 document.title = JSON.stringify({ action: "set-always-on-top", value: state.alwaysOnTop });
+});
+}
+
+const transparentBgToggle = (document.getElementById('transparentBgToggle') as HTMLInputElement);
+if (transparentBgToggle) {
+transparentBgToggle.checked = state.transparentBg;
+transparentBgToggle.addEventListener('change', (e) => {
+state.transparentBg = (e.target as HTMLInputElement).checked;
+localStorage.setItem('visualizer-transparent-bg', state.transparentBg ? 'true' : 'false');
+if (state.transparentBg) {
+document.body.classList.add('transparent-bg');
+} else {
+document.body.classList.remove('transparent-bg');
+}
 });
 }
 

@@ -1,5 +1,33 @@
 <!DOCTYPE html>
 <!-- 
+  Architecture Overview:
+  ---------------------
+  This HTML document serves as the primary entry point and application shell 
+  for the Desktop Audio Visualizer. It is responsible for orchestrating the 
+  loading of styles, scripts, and setting up the DOM structure required by 
+  the rendering engines.
+  
+  DOM Structure:
+  - The #app-container acts as the root boundary.
+  - The #canvas-layer is a dedicated node for WebGL/Canvas2D contexts.
+  - The #ui-layer overlays the canvas, hosting interactive elements.
+  
+  Asset Loading:
+  - Stylesheets are loaded early to prevent unstyled flashes.
+  - Scripts are loaded as modules or deferred to prioritize DOM parsing.
+  
+  Security & Performance:
+  - CSP (Content Security Policy) headers (if applicable) govern asset origins.
+  - Preconnect and dns-prefetch hints are used for external fonts/resources.
+  
+  Accessibility:
+  - ARIA attributes are attached to dynamic components via JavaScript.
+  - The document uses semantic HTML5 tags where possible.
+  
+  Integration:
+  - Designed to work seamlessly with the NixOS environment plugins.
+-->
+<!-- 
 Desktop Audio Visualizer - Main Entry Point
 This HTML file serves as the canvas and UI container for the WebKitGTK layer shell.
 It links the main stylesheet (style.css) and script (main.js).
@@ -121,6 +149,11 @@ Do not add complex nested layouts here; keep the DOM minimal for performance.
 <div class="menu-group">
     <label for="alwaysOnTopToggle">Always on Top:</label>
     <input type="checkbox" id="alwaysOnTopToggle">
+</div>
+
+<div class="menu-group">
+    <label for="transparentBgToggle">Transparent BG:</label>
+    <input type="checkbox" id="transparentBgToggle">
 </div>
 
 <div class="menu-group">

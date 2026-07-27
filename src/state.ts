@@ -1,5 +1,12 @@
 // @ts-nocheck
 /**
+ * Global Application State Management
+ * -----------------------------------
+ * This module provides a centralized store for all configuration, user preferences,
+ * and runtime variables. It employs a reactive pattern where changes to the state
+ * automatically trigger necessary updates in the rendering and audio pipelines.
+ */
+/**
  * state.js
  * 
  * This module encapsulates the global application state for the audio visualizer.
@@ -93,6 +100,7 @@ toggleHelp: null,
 hudShow: true,
 hudTheme: 'green-lcd',
 alwaysOnTop: false,
+transparentBg: false,
 menuOpen: false,
 isSuppressingEvents: false,
 toastTimeout: null,

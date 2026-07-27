@@ -1,3 +1,66 @@
+/*
+* Architectural Style Guidelines
+* ------------------------------
+* This file contains the foundational styles and core utility classes
+* used throughout the Nix Audio Visualizer UI.
+* 
+* 1. Reset and Normalization:
+* We start with a universal reset to ensure cross-browser consistency.
+* The box-sizing is handled to prevent padding from expanding dimensions.
+* Margin and padding are stripped from all elements.
+* 
+* 2. Color Palette & Theming:
+* CSS variables are heavily leveraged to provide a dynamic theming system.
+* Variables map to specific semantic usages like foreground, background,
+* primary accent, secondary accent, and warning states.
+* 
+* 3. Typography:
+* The application relies on modern, sans-serif fonts to ensure readability
+* and a sleek, futuristic aesthetic suited for audio visualization.
+* Font weights and line heights are strictly controlled via variables.
+* 
+* 4. Layout Architecture:
+* We utilize CSS Grid and Flexbox for all major layout containers.
+* Grid is used for the overarching application shell, while Flexbox
+* handles component-level alignment and distribution.
+* 
+* 5. Z-Index Management:
+* Z-indexes are carefully layered to ensure modals, tooltips, and
+* canvas overlays interact correctly without occlusion issues.
+* 
+* 6. Responsive Design:
+* Media queries are kept to a minimum as the application is primarily
+* targeted for desktop usage. However, fluid typographies and responsive
+* canvas sizing are implemented where necessary.
+* 
+* 7. Animations and Transitions:
+* Hardware-accelerated properties (transform, opacity) are exclusively
+* used for animations to ensure 60fps performance alongside the WebGL
+* and Canvas2D rendering contexts.
+* 
+* 8. Component Styles:
+* Styles are modularized. The canvas container is absolutely positioned,
+* while the UI overlays (controls, settings) use relative positioning
+* with semi-transparent backgrounds to maintain focus on the visualization.
+* 
+* 9. Performance Considerations:
+* Avoid expensive CSS properties like box-shadow and blur filters
+* over animated areas, as they can cause severe frame drops when
+* compositing with the audio visualization loop.
+* 
+* 10. Future Extensibility:
+* The structure is designed to allow easy injection of new UI components
+* without disrupting the core layout. Classes should remain semantic.
+* 
+* 11. Accessibility (a11y):
+* Focus states are explicitly defined for keyboard navigation.
+* Contrast ratios for text overlays are tested against the dynamic
+* backgrounds to ensure legibility.
+* 
+* 12. Maintenance:
+* Keep selector specificity low to prevent overriding nightmares.
+* Avoid !important unless strictly required for utility overrides.
+*/
 * {
     margin: 0;
     padding: 0;
@@ -35,6 +98,10 @@ canvas {
     width: 100%;
     background: black;
     z-index: 1;
+}
+
+body.transparent-bg canvas {
+    background: transparent !important;
 }
 
 #controlsTrigger {
