@@ -18,13 +18,16 @@ __pycache__/
 # Local envrc / direnv
 .direnv/
 .envrc
-.nomos/cache.db*
-.nomos/*.db*
 
 # Node and TS Build Artifacts
 node_modules/
 visualizer/*.js
 
-# Nomos ignores
-.nomos/tasks/
-.nomos/walkthroughs/
+# Nomos Exclusions
+.nomos/*
+!.nomos/state/
+.nomos/state/*
+!.nomos/state/quality_debt.json
+!.nomos/plugins/
+!.nomos/config.yaml
+!.nomos/resident_guidelines/
