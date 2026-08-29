@@ -1,0 +1,14 @@
+env: development
+db_path: nomos_local.db
+agent_dir: .agents
+default_project: "nix-audio-visualizer"
+embedding_url: "http://localhost:8081/v1/embeddings"
+task_tracker_db_path: "~/.nomos/data/db/nomos_global.db"
+gitbrain_db_path: "~/.nomos/data/db/nomos_global.db"
+gcp_telemetry_bucket: "my-nomos-telemetry-test"
+default_branch: "develop"
+
+# Phase Topology (Agent tier enforcement per lifecycle phase: 1=IDE/Orchestrator, 2=Swarm/Execution)
+# phases:
+#   edit:
+#     enforce_agent_tier: 2
