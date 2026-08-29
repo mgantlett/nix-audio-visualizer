@@ -53,8 +53,8 @@ Here are the key commands and workflows:
 | **`/context-handshake`** | Align workspace context, specs, and environment variables | `nomos update` |
 | **`/start`** | Groom tasks, assign story points, and claim a branch | Auto-handled via ticketer |
 | **`/verify`** | Run linters, test suites, and visual audits locally | `nomos verify` |
-| **`/commit`** | Compose semantic Git commits using GitBrain history | `nomos commit` |
-| **`/push`** | Enforce DoD and push commits to `develop` trunk | `nomos push` |
+| **`/commit`** | Compose semantic Git commits using GitBrain history | `nomos task sync` |
+| **`/push`** | Enforce DoD and sync task to `develop` trunk | `nomos task sync` |
 
 ### 🔒 Zero-Bypass TDD Guardrails
 The Nomos runner enforces that all logic modifications must have corresponding test coverage and passes lint checks before code can be pushed to the remote repository. 

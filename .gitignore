@@ -31,3 +31,12 @@ visualizer/*.js
 !.nomos/plugins/
 !.nomos/config.yaml
 !.nomos/resident_guidelines/
+bin/
+.nomos_parent_task
+# Nomos Ecosystem
+/.nomos/*
+!/.nomos/data
+/.nomos/data/*
+!/.nomos/data/config.yaml
+/.agent
+/.agents

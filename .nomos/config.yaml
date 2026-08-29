@@ -1,3 +1,0 @@
-
-env: development
-db_path: .nomos/cache.db

@@ -36,6 +36,7 @@ pkgs.mkShell {
   LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
   shellHook = ''
+    export PATH="/home/markg/Projects/sophialabs/open/nomos-os/bin:/home/markg/Projects/sophialabs/private/nomos-sovereign/bin:$PATH"
     echo "⚡ Nix Audio Visualizer Desktop Shell (with Nomos support) Loaded! ⚡"
     echo "Run: ./bin/start-visualizer"
   '';
